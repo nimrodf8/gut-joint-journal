@@ -1,0 +1,415 @@
+"use strict";
+/* Gut & Joint Journal — front-end.
+   Data lives in your family Worker (Cloudflare D1). This file keeps an in-memory
+   mirror (DB) shaped the way the stats code expects. Only device-local settings
+   (who you are, the family code, the database URL) are kept in localStorage. */
+
+const RESET_CODE = "2707";
+const DEVKEY = "gjj_device_v1";
+const $  = s => document.querySelector(s);
+const $$ = s => Array.from(document.querySelectorAll(s));
+const todayStr = () => new Date().toISOString().slice(0,10);
+
+/* ---------- device-local config ---------- */
+function loadDev(){ try{ return JSON.parse(localStorage.getItem(DEVKEY)) || {}; }catch(e){ return {}; } }
+function saveDev(){ localStorage.setItem(DEVKEY, JSON.stringify(DEV)); }
+let DEV = loadDev();                 // { me, familyToken, apiBase, consent:{p1,p2} }
+
+function apiBase(){
+  const b = DEV.apiBase || (window.GJJ_CONFIG && window.GJJ_CONFIG.apiBase) || "";
+  return b.replace(/\/+$/,"");
+}
+
+/* ---------- API client ---------- */
+async function api(path, opts){
+  opts = opts || {};
+  const base = apiBase();
+  if(!base) throw new Error("No database URL set");
+  const r = await fetch(base + path, {
+    method: opts.method || "GET",
+    headers: Object.assign({ "Content-Type":"application/json", "X-Family-Token": DEV.familyToken || "" }, opts.headers||{}),
+    body: opts.body ? JSON.stringify(opts.body) : undefined
+  });
+  if(r.status === 401) throw new Error("Family code rejected");
+  return r;
+}
+
+/* ---------- in-memory mirror ---------- */
+let DB = { startDate:null, childCode:"", spotify:"", labs:[], entries:{} };
+// entries[date] = { child:{...,_by}, parentByAuthor:{Mother:{}, Father:{}}, parent:{merged} }
+
+function mergeParent(byAuthor){
+  const arr = Object.entries(byAuthor||{}).map(([author,v])=>Object.assign({_author:author}, v));
+  if(!arr.length) return null;
+  const latest = arr.slice().sort((a,b)=>(a._at||"").localeCompare(b._at||"")).pop();
+  const m = Object.assign({}, latest);
+  m.pain = Math.max.apply(null, arr.map(x=>+x.pain||0));   // worst-case pain across parents
+  return m;
+}
+
+function rebuildMerges(){ Object.values(DB.entries).forEach(e=>{ e.parent = mergeParent(e.parentByAuthor); }); }
+
+async function pull(){
+  const r = await api("/data");
+  if(!r.ok) throw new Error("Could not load data ("+r.status+")");
+  const j = await r.json();
+  DB.startDate = j.meta.startDate;
+  DB.childCode = j.meta.childCode || "";
+  DB.spotify   = j.meta.spotify || "";
+  DB.labs      = j.labs || [];
+  DB.entries   = {};
+  (j.entries||[]).forEach(row=>{
+    const d = row.date;
+    DB.entries[d] = DB.entries[d] || { child:null, parentByAuthor:{} };
+    const p = row.payload || {};
+    p._at = row.updated_at;
+    if(row.section === "child"){ p._by = row.author; DB.entries[d].child = p; }
+    else { DB.entries[d].parentByAuthor[row.author] = p; }
+  });
+  rebuildMerges();
+}
+
+function flash(msg){ const f=$("#flash"); f.textContent=msg||"Saved ✓"; f.classList.add("show"); setTimeout(()=>f.classList.remove("show"),1200); }
+
+/* ---------- consent / connect gate ---------- */
+function setupGroup(sel, multi){
+  $$(sel+" .opt").forEach(opt=>opt.addEventListener("click",()=>{
+    if(multi){ opt.classList.toggle("sel"); }
+    else { $$(sel+" .opt").forEach(o=>o.classList.remove("sel")); opt.classList.add("sel"); }
+    if(sel==="#whoami") refreshGate();
+  }));
+}
+function getSingle(sel){ const el=$(sel+" .sel"); return el?el.dataset.v:null; }
+function getMulti(sel){ return $$(sel+" .sel").map(e=>e.dataset.v); }
+function setSingle(sel,val){ $$(sel+" .opt").forEach(o=>o.classList.toggle("sel",o.dataset.v===val)); }
+function setMulti(sel,vals){ const a=vals||[]; $$(sel+" .opt").forEach(o=>o.classList.toggle("sel",a.includes(o.dataset.v))); }
+
+setupGroup("#whoami", false);
+
+function refreshGate(){
+  const me = getSingle("#whoami");
+  const tok = $("#familyToken").value.trim();
+  const p1=$("#parent1").checked, p2=$("#parent2").checked;
+  $("#p1lab").classList.toggle("done",p1);
+  $("#p2lab").classList.toggle("done",p2);
+  const ready = me && tok && (p1||p2);
+  $("#startBtn").disabled = !ready;
+  $("#gateHint").textContent = !me ? "Choose who you are on this device."
+    : !tok ? "Enter your family code."
+    : !(p1||p2) ? "At least one parent must check the box."
+    : (p1&&p2) ? "All set — connect to start." : "Ready. The second box keeps this notice until both have checked.";
+}
+["#familyToken","#apiBase","#childCode"].forEach(s=>{ const el=$(s); if(el) el.addEventListener("input",refreshGate); });
+$("#parent1").addEventListener("change",refreshGate);
+$("#parent2").addEventListener("change",refreshGate);
+
+$("#startBtn").addEventListener("click",async()=>{
+  DEV.me = getSingle("#whoami");
+  DEV.familyToken = $("#familyToken").value.trim();
+  const ab = $("#apiBase").value.trim(); if(ab) DEV.apiBase = ab;
+  DEV.consent = { p1:$("#parent1").checked, p2:$("#parent2").checked, when:new Date().toISOString() };
+  saveDev();
+  $("#gateHint").textContent = "Connecting…";
+  try{
+    await api("/meta", { method:"PUT", body:{ ensureStart:true, childCode: $("#childCode").value.trim() } });
+    await enterApp();
+  }catch(e){
+    $("#gateHint").textContent = "Couldn't connect: " + e.message + ". Check the family code and database URL.";
+  }
+});
+
+/* ---------- enter app ---------- */
+async function enterApp(){
+  await pull();
+  $("#gate").classList.add("hide");
+  $("#app").classList.remove("hide");
+  const d = todayStr();
+  $("#theDate").value = d; $("#labDate").value = d;
+  $("#spotifyUrl").value = DB.spotify || "";
+  setSingle("#switchWho", DEV.me);
+  paintIdentity();
+  updateHeader();
+  loadDay(d);
+  renderLabs();
+  renderStats(30);
+}
+function paintIdentity(){
+  $("#userBadge").textContent = DEV.me || "—";
+  if($("#meName")) $("#meName").textContent = DEV.me || "—";
+  if($("#parAuthorNote")) $("#parAuthorNote").textContent = "Saving as " + (DEV.me||"—");
+  if($("#kidAuthorNote")) $("#kidAuthorNote").textContent = "Recorded by " + (DEV.me||"—");
+}
+function updateHeader(){
+  $("#hdrSub").textContent = DB.childCode ? ("For "+DB.childCode) : "Family journal";
+  if(DB.startDate){
+    const start=new Date(DB.startDate);
+    const days=Math.floor((new Date(todayStr())-start)/86400000)+1;
+    $("#dayCount").textContent="Day "+Math.max(1,days);
+    $("#startedOn").textContent="Started "+start.toLocaleDateString();
+  }
+}
+
+/* ---------- tab nav ---------- */
+const pages=["summary","child","parent","labs","stats","settings"];
+$$("nav.tabs button").forEach(b=>b.addEventListener("click",()=>{
+  const p=b.dataset.p;
+  $$("nav.tabs button").forEach(x=>x.classList.toggle("active",x===b));
+  pages.forEach(pg=>$("#page-"+pg).classList.toggle("hide",pg!==p));
+  if(p==="stats") renderStats(currentRange);
+  window.scrollTo(0,0);
+}));
+
+/* ---------- date ---------- */
+$("#theDate").addEventListener("change",e=>loadDay(e.target.value));
+$("#todayBtn").addEventListener("click",()=>{ const d=todayStr(); $("#theDate").value=d; loadDay(d); });
+
+/* ---------- option groups ---------- */
+["#kidWhere"].forEach(s=>setupGroup(s,true));
+["#kidMood","#kidDrink","#kidEat","#kidPlay","#parPainTime","#parBristol","#parColor","#parSmell","#parSoil","#parSugar","#parActivity","#parProbiotic","#parSupp","#parSleep","#switchWho"].forEach(s=>setupGroup(s,false));
+
+const faces=["😀","🙂","🙂","😐","😟","😣","😖","😫","😩","😢","😭"];
+$("#kidPain").addEventListener("input",e=>{ const v=+e.target.value; $("#kidPainNum").textContent=v; $("#kidFace").textContent=faces[v]; });
+$("#parPain").addEventListener("input",e=>{ $("#parPainNum").textContent=+e.target.value; });
+
+/* ---------- load a day into the forms ---------- */
+function loadDay(date){
+  const e = DB.entries[date] || {};
+  const c = e.child || {};
+  const mine = (e.parentByAuthor && e.parentByAuthor[DEV.me]) || {};
+  // child
+  $("#kidPain").value=c.pain||0; $("#kidPainNum").textContent=c.pain||0; $("#kidFace").textContent=faces[c.pain||0];
+  setMulti("#kidWhere", c.where); setSingle("#kidMood", c.mood); setSingle("#kidDrink", c.drink);
+  setSingle("#kidEat", c.eat); setSingle("#kidPlay", c.play);
+  // parent (current user's own row)
+  $("#parPain").value=mine.pain||0; $("#parPainNum").textContent=mine.pain||0;
+  setSingle("#parPainTime", mine.painTime); setSingle("#parBristol", mine.bristol);
+  setSingle("#parColor", mine.color); setSingle("#parSmell", mine.smell);
+  setSingle("#parSoil", mine.soil); setSingle("#parSugar", mine.sugar);
+  setSingle("#parActivity", mine.activity); setSingle("#parProbiotic", mine.probiotic);
+  setSingle("#parSupp", mine.supp); setSingle("#parSleep", mine.sleep);
+  $("#parNotes").value = mine.notes || "";
+  renderOtherParent(date);
+  renderSpotify();
+}
+
+function renderOtherParent(date){
+  const box=$("#otherParent"); if(!box) return;
+  const other = DEV.me==="Mother" ? "Father" : "Mother";
+  const e = DB.entries[date] || {};
+  const o = e.parentByAuthor && e.parentByAuthor[other];
+  if(!o){ box.innerHTML = '<small class="muted">No entry from '+other+' for this day yet.</small>'; return; }
+  const chips=[];
+  if(o.pain!=null) chips.push("Pain "+o.pain);
+  if(o.bristol!=null) chips.push("Bristol "+o.bristol);
+  if(o.sugar) chips.push("Sugar: "+o.sugar);
+  if(o.probiotic) chips.push("Probiotic: "+o.probiotic);
+  box.innerHTML = '<div class="insight"><strong>'+other+"'s entry</strong> "
+    + chips.map(c=>'<span class="entry-chip">'+c+'</span>').join("")
+    + (o.notes? '<div style="margin-top:6px;font-size:.85rem">"'+o.notes.replace(/</g,"&lt;")+'"</div>':'') + '</div>';
+}
+
+/* ---------- saving ---------- */
+async function putEntry(section, payload){
+  const date=$("#theDate").value;
+  const r = await api("/entry",{ method:"PUT", body:{ date, section, author:DEV.me, payload } });
+  if(!r.ok) throw new Error("save failed ("+r.status+")");
+  // update mirror
+  DB.entries[date]=DB.entries[date]||{child:null,parentByAuthor:{}};
+  payload._at=new Date().toISOString();
+  if(section==="child"){ payload._by=DEV.me; DB.entries[date].child=payload; }
+  else { DB.entries[date].parentByAuthor[DEV.me]=payload; }
+  DB.entries[date].parent=mergeParent(DB.entries[date].parentByAuthor);
+}
+
+$("#kidSave").addEventListener("click",async()=>{
+  try{
+    await putEntry("child",{ pain:+$("#kidPain").value, where:getMulti("#kidWhere"),
+      mood:getSingle("#kidMood"), drink:getSingle("#kidDrink"), eat:getSingle("#kidEat"), play:getSingle("#kidPlay") });
+    flash("Saved! 🎉"); updateHeader();
+  }catch(e){ flash("⚠ "+e.message); }
+});
+
+$("#parSave").addEventListener("click",async()=>{
+  try{
+    await putEntry("parent",{ pain:+$("#parPain").value, painTime:getSingle("#parPainTime"),
+      bristol:getSingle("#parBristol"), color:getSingle("#parColor"), smell:getSingle("#parSmell"),
+      soil:getSingle("#parSoil"), sugar:getSingle("#parSugar"), activity:getSingle("#parActivity"),
+      probiotic:getSingle("#parProbiotic"), supp:getSingle("#parSupp"), sleep:getSingle("#parSleep"),
+      notes:$("#parNotes").value.trim() });
+    flash("Saved as "+DEV.me+" ✓"); updateHeader(); renderOtherParent($("#theDate").value);
+  }catch(e){ flash("⚠ "+e.message); }
+});
+
+/* ---------- labs ---------- */
+$("#labSave").addEventListener("click",async()=>{
+  const t=$("#labText").value.trim(), c=$("#labCalpro").value.trim();
+  if(!t && !c){ flash("Add a result first"); return; }
+  try{
+    const r=await api("/lab",{ method:"POST", body:{ date:$("#labDate").value, calpro:c, text:t, author:DEV.me } });
+    const lab=await r.json();
+    DB.labs.unshift(lab); DB.labs.sort((a,b)=>(b.date||"").localeCompare(a.date||""));
+    $("#labText").value=""; $("#labCalpro").value=""; renderLabs(); flash("Result saved ✓");
+  }catch(e){ flash("⚠ "+e.message); }
+});
+function renderLabs(){
+  const box=$("#labList");
+  if(!DB.labs.length){ box.innerHTML='<small class="muted">No results yet.</small>'; return; }
+  box.innerHTML = DB.labs.map(l=>`
+    <div class="card tight" style="margin:8px 0">
+      <div class="spread"><strong>${l.date||"—"}</strong>
+        <button class="btn ghost small" data-del="${l.id}">Delete</button></div>
+      <small class="muted">Added by ${l.author||"—"}</small>
+      ${l.calpro?`<div class="entry-chip" style="margin-top:6px">Calprotectin: ${l.calpro} µg/g</div>`:""}
+      ${l.text?`<p style="margin:.5em 0 0;font-size:.9rem">${(l.text||"").replace(/</g,"&lt;")}</p>`:""}
+    </div>`).join("");
+  $$("#labList [data-del]").forEach(b=>b.addEventListener("click",async()=>{
+    try{ await api("/lab?id="+encodeURIComponent(b.dataset.del),{method:"DELETE"});
+      DB.labs=DB.labs.filter(x=>x.id!=b.dataset.del); renderLabs(); }catch(e){ flash("⚠ "+e.message); }
+  }));
+}
+
+/* ---------- spotify ---------- */
+$("#spotifySave").addEventListener("click",async()=>{
+  DB.spotify=$("#spotifyUrl").value.trim();
+  try{ await api("/meta",{method:"PUT",body:{spotify:DB.spotify}}); renderSpotify(); flash("Song saved 🎵"); }
+  catch(e){ flash("⚠ "+e.message); }
+});
+function renderSpotify(){
+  let host=$("#kidSpotify");
+  if(!DB.spotify){ if(host) host.remove(); return; }
+  const m=DB.spotify.match(/track\/([A-Za-z0-9]+)/); if(!m) return;
+  if(!host){ host=document.createElement("div"); host.id="kidSpotify"; host.style.margin="8px 0 4px";
+    const anchor=$("#page-child .kidwrap .eyebrow"); if(anchor) anchor.after(host); }
+  host.innerHTML=`<iframe style="border-radius:12px" src="https://open.spotify.com/embed/track/${m[1]}" width="100%" height="80" frameborder="0" allow="encrypted-media"></iframe>`;
+}
+
+/* ---------- switch user ---------- */
+$("#switchSave").addEventListener("click",()=>{
+  const v=getSingle("#switchWho"); if(!v){ flash("Pick one"); return; }
+  DEV.me=v; saveDev(); paintIdentity(); loadDay($("#theDate").value); flash("Now: "+v);
+});
+
+/* ---------- export ---------- */
+$("#exportBtn").addEventListener("click",()=>{
+  const blob=new Blob([JSON.stringify(DB,null,2)],{type:"application/json"});
+  const a=document.createElement("a"); a.href=URL.createObjectURL(blob);
+  a.download="gut-joint-journal-"+todayStr()+".json"; a.click();
+});
+
+/* ---------- reset (erases the shared family database) ---------- */
+$("#resetBtn").addEventListener("click",async()=>{
+  if($("#resetCode").value!==RESET_CODE){ flash("Wrong code"); return; }
+  if(!confirm("Erase the ENTIRE family database for everyone, and sign this device out? This cannot be undone.")) return;
+  try{ await api("/reset",{method:"POST",body:{code:RESET_CODE}}); }catch(e){}
+  localStorage.removeItem(DEVKEY); location.reload();
+});
+
+/* ---------- AI analysis (through the family Worker) ---------- */
+let aiRange=30;
+$$("#aiRangeSeg button").forEach(b=>b.addEventListener("click",()=>{
+  $$("#aiRangeSeg button").forEach(x=>x.classList.remove("active")); b.classList.add("active"); aiRange=+b.dataset.r;
+}));
+$("#aiBtn").addEventListener("click",async()=>{
+  const out=$("#aiOut");
+  const rows=entriesInRange(aiRange);
+  if(rows.length<3){ out.innerHTML='<div class="banner note"><span>📉</span><div>Only '+rows.length+' day(s) logged in this range — log a couple more before analysing.</div></div>'; return; }
+  const payload=JSON.stringify({ childCode:DB.childCode||"child", startDate:DB.startDate, rangeDays:aiRange, entries:rows, labs:DB.labs });
+  const btn=$("#aiBtn"), orig=btn.textContent; btn.disabled=true; btn.textContent="Analysing…";
+  out.innerHTML='<div class="insight">Sending this period to Claude…</div>';
+  try{
+    const r=await api("/ai",{ method:"POST", body:{ data:payload } });
+    const j=await r.json();
+    if(!r.ok || j.error){ out.innerHTML='<div class="banner note"><span>⚠️</span><div>Error: '+((j&&(j.detail||j.error))||r.status)+'</div></div>'; }
+    else { const txt=(j.analysis||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/\n/g,"<br>");
+      out.innerHTML='<div class="card tight"><div class="eyebrow">AI review · last '+aiRange+' days</div><p style="font-size:.92rem;line-height:1.6">'+txt+'</p><small class="muted">Generated from your data. Not medical advice — discuss with your doctor.</small></div>'; }
+  }catch(e){ out.innerHTML='<div class="banner note"><span>📡</span><div>Could not reach the database ('+e.message+').</div></div>'; }
+  finally{ btn.disabled=false; btn.textContent=orig; }
+});
+
+/* ---------- stats / insights ---------- */
+let currentRange=30;
+$$("#rangeSeg button").forEach(b=>b.addEventListener("click",()=>{
+  $$("#rangeSeg button").forEach(x=>x.classList.remove("active")); b.classList.add("active");
+  currentRange=+b.dataset.r; renderStats(currentRange);
+}));
+function entriesInRange(days){
+  const cut=new Date(); cut.setDate(cut.getDate()-days);
+  return Object.entries(DB.entries).filter(([d])=>new Date(d)>=cut)
+    .map(([d,v])=>Object.assign({date:d}, v)).sort((a,b)=>a.date.localeCompare(b.date));
+}
+const num = v => (v===null||v===undefined||v==="")?null:+v;
+
+function renderStats(days){
+  $("#rangeNote").textContent="Last "+days+" days";
+  const rows=entriesInRange(days);
+  const withPain=rows.filter(r=>r.parent && num(r.parent.pain)!==null);
+  const pains=withPain.map(r=>num(r.parent.pain));
+  const avg=pains.length?(pains.reduce((a,b)=>a+b,0)/pains.length):null;
+  const painDays=pains.filter(p=>p>=3).length;
+  const hardGut=rows.filter(r=>{const b=r.parent&&r.parent.bristol;return b==="0"||b==="6"||b==="7";}).length;
+  $("#sDays").textContent=rows.length;
+  $("#sAvgPain").textContent=avg===null?"–":avg.toFixed(1);
+  $("#sPainDays").textContent=painDays;
+  $("#sHardGut").textContent=hardGut;
+
+  const buckets={none:[],some:[],lots:[]};
+  rows.forEach(r=>{const s=r.parent&&r.parent.sugar;const p=r.parent&&num(r.parent.pain);if(s&&p!==null&&buckets[s])buckets[s].push(p);});
+  const labelMap={none:"No sugar",some:"Some",lots:"A lot"};
+  const anyS=Object.values(buckets).some(a=>a.length);
+  $("#sugarBars").innerHTML=!anyS?'<small class="muted">Not enough data yet.</small>':
+    ["none","some","lots"].map(k=>{ if(!buckets[k].length)return"";
+      const m=buckets[k].reduce((a,b)=>a+b,0)/buckets[k].length;
+      return `<div class="bar-row"><span class="lab">${labelMap[k]}</span><div class="bar-track"><div class="bar-fill" style="width:${m/10*100}%"></div></div><span>${m.toFixed(1)}</span></div>`;
+    }).join("");
+
+  const overlap=rows.filter(r=>{const p=r.parent;if(!p)return false;
+    const hard=p.bristol==="0"||p.bristol==="6"||p.bristol==="7"||p.soil==="moderate"||p.soil==="heavy";
+    return hard&&num(p.pain)>=3;});
+  $("#overlapBox").innerHTML=!rows.length?'<small class="muted">—</small>':
+    `<div class="insight ${overlap.length?'warn':'good'}">On <strong>${overlap.length}</strong> of ${rows.length} logged days, a harder gut day and a joint-pain day (≥3) happened together${overlap.length?": "+overlap.slice(-6).map(r=>r.date.slice(5)).join(", "):"."}.</div><small class="muted">Same-day overlap is a clue, not proof — keep logging.</small>`;
+
+  const ins=[];
+  function corrMean(fn){const a=rows.filter(fn).map(r=>num(r.parent.pain)).filter(p=>p!==null);return a.length?{n:a.length,m:a.reduce((x,y)=>x+y,0)/a.length}:null;}
+  if(buckets.lots.length>=2&&buckets.none.length>=2){
+    const hi=buckets.lots.reduce((a,b)=>a+b,0)/buckets.lots.length, lo=buckets.none.reduce((a,b)=>a+b,0)/buckets.none.length;
+    if(hi-lo>=1.5) ins.push({t:`High-sugar days average <strong>${hi.toFixed(1)}</strong> pain vs <strong>${lo.toFixed(1)}</strong> on no-sugar days.`,c:"warn"});
+  }
+  const proY=corrMean(r=>r.parent&&r.parent.probiotic==="yes"), proN=corrMean(r=>r.parent&&r.parent.probiotic==="no");
+  if(proY&&proN&&proY.n>=3&&proN.n>=3&&proN.m-proY.m>=1.2) ins.push({t:`Pain tends lower on probiotic days (<strong>${proY.m.toFixed(1)}</strong>) than missed (<strong>${proN.m.toFixed(1)}</strong>).`,c:"good"});
+  const nights=rows.filter(r=>r.parent&&r.parent.painTime==="night").length;
+  if(nights>=3) ins.push({t:`Pain was night-time on <strong>${nights}</strong> days — also typical of benign childhood limb pains; mention to the doctor either way.`,c:""});
+  const actH=corrMean(r=>r.parent&&r.parent.activity==="heavy");
+  if(actH&&actH.n>=3&&avg!==null&&actH.m-avg>=1.5) ins.push({t:`Heavy-activity days run higher on pain (<strong>${actH.m.toFixed(1)}</strong> vs ${avg.toFixed(1)}) — activity may be its own trigger.`,c:""});
+  if(rows.length<5) ins.push({t:`Only ${rows.length} day(s) logged. Patterns get trustworthy after ~2–3 weeks.`,c:""});
+  $("#insights").innerHTML=ins.length?ins.map(i=>`<div class="insight ${i.c}">${i.t}</div>`).join(""):'<small class="muted">No strong patterns yet — keep logging.</small>';
+
+  const an=[];
+  if(pains.length>=5){
+    const mean=avg, sd=Math.sqrt(pains.reduce((a,b)=>a+(b-mean)**2,0)/pains.length)||1;
+    withPain.forEach(r=>{const p=num(r.parent.pain);const z=(p-mean)/sd;
+      if(z>=1.5) an.push({d:r.date,t:`High pain (${p}) — above the ${mean.toFixed(1)} average.`});
+      const goodGut=r.parent.bristol==="4"||r.parent.bristol==="3";
+      if(p>=4&&goodGut&&r.parent.sugar==="none") an.push({d:r.date,t:`Pain ${p} on a calm-gut, no-sugar day — breaks the pattern; check sleep/activity/weather.`});
+      if(p<=1&&(r.parent.bristol==="7"||r.parent.bristol==="0")) an.push({d:r.date,t:`Rough gut but little pain (${p}) — a useful exception.`});
+    });
+  }
+  const seen=new Set(); const anU=an.filter(a=>{const k=a.d+a.t;if(seen.has(k))return false;seen.add(k);return true;}).slice(-8);
+  $("#anomalies").innerHTML=anU.length?anU.map(a=>`<div class="insight bad"><strong>${a.d.slice(5)}</strong> — ${a.t}</div>`).join(""):'<small class="muted">No anomaly days flagged yet.</small>';
+}
+
+/* ---------- boot ---------- */
+(function boot(){
+  // prefill gate
+  setSingle("#whoami", DEV.me);
+  $("#familyToken").value = DEV.familyToken || "";
+  $("#apiBase").value = DEV.apiBase || (window.GJJ_CONFIG&&window.GJJ_CONFIG.apiBase) || "";
+  if(DEV.me && DEV.familyToken && DEV.consent && apiBase()){
+    enterApp().catch(e=>{
+      // fall back to gate if connection fails
+      $("#gateHint").textContent = "Reconnect needed: " + e.message;
+      refreshGate();
+    });
+  } else {
+    refreshGate();
+  }
+})();
