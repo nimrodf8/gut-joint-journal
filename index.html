@@ -1,3 +1,566 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Gut &amp; Joint Journal</title>
+<style>
+/* ---- Palette: calm seafoam + warm coral, deliberately non-clinical ---- */
+  :root{
+    --bg:#f3f7f6; --ink:#1f3b3a; --muted:#5d7a78;
+    --paper:#ffffff; --line:#dde9e7;
+    --teal:#0f9d8f; --teal-soft:#d6efec; --teal-deep:#0a6f66;
+    --coral:#f08a5d; --coral-soft:#fbe2d5;
+    --sun:#f4c95d; --plum:#7a5c8e; --sky:#5aa9e6;
+    --good:#2f9e6f; --warn:#e3a008; --bad:#d9534f;
+    --radius:18px; --shadow:0 6px 24px rgba(15,61,58,.08);
+    --font:"Segoe UI",system-ui,-apple-system,"Helvetica Neue",Arial,sans-serif;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0;background:var(--bg);color:var(--ink);font-family:var(--font);-webkit-text-size-adjust:100%}
+  body{padding-bottom:96px}
+  h1,h2,h3{margin:0 0 .4em;line-height:1.15}
+  h1{font-size:1.5rem;letter-spacing:-.01em}
+  h2{font-size:1.18rem}
+  h3{font-size:1rem}
+  p{line-height:1.55;margin:.4em 0}
+  small{color:var(--muted)}
+  a{color:var(--teal-deep)}
+  .wrap{max-width:680px;margin:0 auto;padding:18px 16px}
+  .card{background:var(--paper);border:1px solid var(--line);border-radius:var(--radius);padding:18px;margin:14px 0;box-shadow:var(--shadow)}
+  .card.tight{padding:14px}
+  .eyebrow{font-size:.72rem;text-transform:uppercase;letter-spacing:.14em;color:var(--teal);font-weight:700;margin-bottom:6px}
+  .muted{color:var(--muted)}
+  .pill{display:inline-block;background:var(--teal-soft);color:var(--teal-deep);border-radius:999px;padding:3px 11px;font-size:.78rem;font-weight:600}
+  .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+  .spread{display:flex;justify-content:space-between;align-items:center;gap:10px}
+  hr{border:none;border-top:1px solid var(--line);margin:16px 0}
+
+  /* header */
+  header.app{position:sticky;top:0;z-index:30;background:linear-gradient(180deg,#ffffff,#ffffffee);backdrop-filter:blur(8px);border-bottom:1px solid var(--line)}
+  header.app .wrap{padding:12px 16px;display:flex;align-items:center;gap:10px}
+  .logo{width:38px;height:38px;border-radius:12px;background:radial-gradient(circle at 30% 30%,var(--teal),var(--teal-deep));display:grid;place-items:center;color:#fff;font-size:1.2rem;flex:0 0 auto}
+  .title-block strong{display:block;font-size:1.02rem}
+  .title-block small{font-size:.74rem}
+
+  /* bottom nav */
+  nav.tabs{position:fixed;bottom:0;left:0;right:0;z-index:40;background:#fff;border-top:1px solid var(--line);display:flex;padding:6px max(6px,env(safe-area-inset-left)) calc(6px + env(safe-area-inset-bottom))}
+  nav.tabs button{flex:1;border:none;background:none;padding:8px 2px;font-family:var(--font);color:var(--muted);font-size:.66rem;display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;border-radius:12px}
+  nav.tabs button .ic{font-size:1.25rem;line-height:1}
+  nav.tabs button.active{color:var(--teal-deep);font-weight:700;background:var(--teal-soft)}
+
+  /* buttons */
+  .btn{display:inline-flex;align-items:center;gap:8px;justify-content:center;border:none;border-radius:14px;padding:13px 18px;font-family:var(--font);font-size:1rem;font-weight:700;cursor:pointer;background:var(--teal);color:#fff;transition:transform .05s ease,filter .15s}
+  .btn:active{transform:translateY(1px)}
+  .btn.block{width:100%}
+  .btn.ghost{background:#fff;color:var(--teal-deep);border:1.5px solid var(--teal)}
+  .btn.coral{background:var(--coral)}
+  .btn.danger{background:var(--bad)}
+  .btn.small{padding:8px 13px;font-size:.85rem;border-radius:11px}
+  .btn:disabled{filter:grayscale(.6);opacity:.55;cursor:not-allowed}
+
+  /* option chips */
+  .opts{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0 4px}
+  .opt{border:1.5px solid var(--line);background:#fff;border-radius:13px;padding:10px 12px;font-size:.92rem;cursor:pointer;display:flex;align-items:center;gap:7px;font-family:var(--font);color:var(--ink);transition:all .12s;min-height:44px}
+  .opt .em{font-size:1.15rem}
+  .opt.sel{border-color:var(--teal);background:var(--teal-soft);color:var(--teal-deep);font-weight:700;box-shadow:0 0 0 2px var(--teal-soft)}
+  .opt.kid{font-size:1rem;padding:12px 14px}
+  .opt.kid .em{font-size:1.6rem}
+
+  .field{margin:16px 0}
+  .field .label{font-weight:700;font-size:.95rem;display:flex;align-items:center;gap:7px;flex-wrap:wrap}
+  .field .scalename{font-size:.72rem;color:var(--muted);font-weight:600}
+  .reflink{font-size:.72rem;color:var(--teal-deep);text-decoration:none;border-bottom:1px dotted var(--teal);padding-bottom:1px}
+
+  /* slider */
+  .slider-wrap{margin-top:10px}
+  input[type=range]{width:100%;accent-color:var(--coral);height:34px}
+  .pain-readout{display:flex;align-items:center;justify-content:center;gap:12px;margin:6px 0}
+  .pain-face{font-size:2.6rem}
+  .pain-num{font-size:2rem;font-weight:800}
+  textarea,input[type=text],input[type=date],input[type=password]{width:100%;border:1.5px solid var(--line);border-radius:12px;padding:11px;font-family:var(--font);font-size:1rem;background:#fff;color:var(--ink)}
+  textarea{min-height:90px;resize:vertical}
+
+  label.check{display:flex;gap:11px;align-items:flex-start;padding:12px;border:1.5px solid var(--line);border-radius:13px;cursor:pointer;margin:10px 0}
+  label.check input{margin-top:3px;width:20px;height:20px;accent-color:var(--teal);flex:0 0 auto}
+  label.check.done{border-color:var(--good);background:#effaf3}
+
+  .banner{border-radius:13px;padding:12px 14px;font-size:.9rem;margin:10px 0;display:flex;gap:9px;align-items:flex-start}
+  .banner.info{background:var(--teal-soft);color:var(--teal-deep)}
+  .banner.note{background:#fff7e6;color:#7a5a00;border:1px solid #f3dca0}
+  .banner.lock{background:#f1f4f3;color:var(--muted);border:1px dashed var(--line)}
+
+  .stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .stat{background:#fff;border:1px solid var(--line);border-radius:14px;padding:12px}
+  .stat .big{font-size:1.7rem;font-weight:800;line-height:1}
+  .stat .lab{font-size:.74rem;color:var(--muted);margin-top:4px}
+
+  .insight{border-left:4px solid var(--teal);background:#fff;border:1px solid var(--line);border-left-width:4px;border-radius:10px;padding:11px 13px;margin:9px 0;font-size:.9rem}
+  .insight.warn{border-left-color:var(--warn)}
+  .insight.bad{border-left-color:var(--bad)}
+  .insight.good{border-left-color:var(--good)}
+
+  .bar-row{display:flex;align-items:center;gap:8px;margin:5px 0;font-size:.8rem}
+  .bar-row .lab{width:84px;flex:0 0 auto;color:var(--muted)}
+  .bar-track{flex:1;background:#eef3f2;border-radius:8px;height:16px;overflow:hidden}
+  .bar-fill{height:100%;background:var(--teal);border-radius:8px}
+
+  .hide{display:none!important}
+  .center{text-align:center}
+  .saved-flash{position:fixed;left:50%;bottom:108px;transform:translateX(-50%);background:var(--ink);color:#fff;padding:11px 20px;border-radius:999px;font-weight:700;font-size:.9rem;opacity:0;transition:opacity .25s;z-index:60;pointer-events:none}
+  .saved-flash.show{opacity:1}
+  .seg{display:flex;border:1.5px solid var(--line);border-radius:12px;overflow:hidden}
+  .seg button{flex:1;border:none;background:#fff;padding:9px;font-family:var(--font);font-weight:700;color:var(--muted);cursor:pointer;font-size:.85rem}
+  .seg button.active{background:var(--teal);color:#fff}
+  .kidwrap{background:linear-gradient(160deg,#fff,#fef6f1)}
+  .footnote{font-size:.72rem;color:var(--muted);margin-top:18px;line-height:1.5}
+  .entry-chip{display:inline-flex;gap:5px;align-items:center;background:#f1f4f3;border-radius:8px;padding:4px 9px;font-size:.78rem;margin:3px 4px 0 0}
+
+</style>
+</head>
+<body>
+<!-- ================= CONNECT / CONSENT GATE ================= -->
+<div id="gate" class="wrap">
+  <div class="card">
+    <div class="logo" style="margin-bottom:10px">🌱</div>
+    <div class="eyebrow">Set up this device</div>
+    <h1>Gut &amp; Joint Journal</h1>
+    <p class="muted">A shared journal for tracking a child's tummy and joint symptoms over time, so both parents can add observations from their own devices and bring real patterns to the doctors.</p>
+
+    <div class="banner info">
+      <span>☁️</span>
+      <div><strong>How your data is stored.</strong> Entries sync through your own private family database (Cloudflare D1) so Mother and Father see the same record across devices. It is reachable only with your family code, and it is never shared with Anthropic except the moment you tap "Analyse with AI". This is different from a device-only notebook — please make sure both parents understand and agree.</div>
+    </div>
+
+    <div class="banner note">
+      <span>🧭</span>
+      <div><strong>This is a journal, not a diagnosis.</strong> It does not replace medical care. The summary describes a <em>hypothesis to explore with qualified clinicians</em>, not a confirmed cause.</div>
+    </div>
+
+    <h3 style="margin-top:18px">Who is using this device?</h3>
+    <div class="opts" id="whoami">
+      <div class="opt" data-v="Mother"><span class="em">👩</span>Mother</div>
+      <div class="opt" data-v="Father"><span class="em">👨</span>Father</div>
+    </div>
+    <small class="muted">Everything you enter here is tagged with this name.</small>
+
+    <h3 style="margin-top:18px">Family code</h3>
+    <p class="muted" style="margin-top:2px">The shared password both parents use to reach your family database. Set it once on the Worker, then enter the same code on each device.</p>
+    <input type="password" id="familyToken" placeholder="Family code">
+
+    <details style="margin-top:10px"><summary style="cursor:pointer;color:var(--teal-deep);font-weight:700">Advanced: database URL</summary>
+      <p class="muted" style="margin:8px 0 4px"><small>Pre-filled from config.js. Only change it if you deployed your Worker somewhere else.</small></p>
+      <input type="text" id="apiBase" placeholder="https://gjj-api.your-name.workers.dev">
+    </details>
+
+    <h3 style="margin-top:18px">Child's initials</h3>
+    <p class="muted" style="margin-top:2px">Use initials or a nickname rather than a full name. Optional.</p>
+    <input type="text" id="childCode" placeholder="Child's initials or nickname (optional)">
+
+    <hr>
+    <h3>Both parents acknowledge</h3>
+    <p class="muted" style="margin-top:2px">You can start once <strong>one</strong> parent has checked the box. This notice clears only after <strong>both</strong> have, on this device.</p>
+
+    <label class="check" id="p1lab">
+      <input type="checkbox" id="parent1">
+      <div><strong>Mother</strong><br><small>I understand this is not a diagnosis and that our entries are stored in our private family database.</small></div>
+    </label>
+    <label class="check" id="p2lab">
+      <input type="checkbox" id="parent2">
+      <div><strong>Father</strong><br><small>I understand this is not a diagnosis and that our entries are stored in our private family database.</small></div>
+    </label>
+
+    <button class="btn block" id="startBtn" disabled>Connect &amp; start →</button>
+    <p class="center" style="margin-top:10px"><small id="gateHint">Choose who you are, enter the family code, and check at least one box.</small></p>
+  </div>
+</div>
+
+<!-- ================= APP ================= -->
+<div id="app" class="hide">
+  <header class="app">
+    <div class="wrap">
+      <div class="logo">🌱</div>
+      <div class="title-block">
+        <strong>Gut &amp; Joint Journal</strong>
+        <small id="hdrSub">—</small>
+      </div>
+      <span class="pill" id="userBadge" style="margin-left:auto">—</span>
+    </div>
+  </header>
+
+  <div class="wrap">
+    <!-- date picker -->
+    <div class="card tight spread">
+      <div>
+        <div class="eyebrow">Logging for</div>
+        <input type="date" id="theDate" style="margin-top:4px">
+      </div>
+      <button class="btn ghost small" id="todayBtn">Today</button>
+    </div>
+
+    <!-- ===== PAGE: SUMMARY ===== -->
+    <section id="page-summary">
+      <div class="card">
+        <div class="spread">
+          <span class="pill" id="dayCount">Day 1</span>
+          <small class="muted" id="startedOn">Started —</small>
+        </div>
+        <h1 style="margin-top:10px">What we're watching, and why</h1>
+        <p>This child had necrotising enterocolitis as a newborn and, at three months, surgery that removed a large part of the bowel (short bowel syndrome), followed by treated neonatal sepsis. Since toddlerhood there has been recurring night-time joint pain in the legs, knees and feet, plus ongoing trouble with stool consistency and control.</p>
+
+        <h3 style="margin-top:16px">The pattern the family has noticed</h3>
+        <p>Joint-pain days seem to line up with harder tummy days, and both appear to worsen after high-sugar days. Acknowledging the pain (warmth, a hot-water bottle, comfort) seems to ease it.</p>
+
+        <div class="banner info"><span>🧪</span><div><strong>The hypothesis to test:</strong> that an imbalanced gut microbiome after the surgery (dysbiosis) may drive low-grade, body-wide inflammation that shows up <em>both</em> as gut symptoms and as joint pain — connected through the gut–immune–nervous-system "axis." This is a reasonable, research-supported <em>idea</em>, not a settled fact for this child.</div></div>
+
+        <h3 style="margin-top:16px">Honest caveats worth keeping in mind</h3>
+        <p style="margin-bottom:6px">A balanced log is far more persuasive to doctors than a confident theory, so it helps to hold these in view:</p>
+        <ul class="muted" style="line-height:1.6;margin-top:4px">
+          <li>Night-time leg pain in the knees/feet that eases with warmth and comfort is <strong>very common in healthy children</strong> ("benign nocturnal limb pains of childhood"). It may coexist with, or partly explain, what's seen here.</li>
+          <li>Two things happening on the same days shows <strong>correlation, not proof of cause</strong>. Tracking is how you tell a real link from a coincidence.</li>
+          <li>Physical activity, weather, sleep and stress can each move joint pain on their own — which is exactly why we log them.</li>
+        </ul>
+
+        <h3 style="margin-top:16px">What to do with this journal</h3>
+        <p>Log daily (the child's page is optional and kept light on purpose). Add a monthly stool/lab result when you have one. Watch the Insights page for patterns — then take the printout to a paediatric gastroenterologist and, if pain persists, a paediatric rheumatologist. Centres worth approaching in Israel include the paediatric GI units at Schneider Children's, Sheba (Tel Hashomer) and Hadassah.</p>
+
+        <div class="banner note"><span>⚠️</span><div>If there is blood in the stool, a swollen/red/hot joint, fever with joint pain, weight loss, or pain that wakes the child and won't settle — contact a doctor promptly. Those are not "track and wait" signs.</div></div>
+
+        <details style="margin-top:12px">
+          <summary style="cursor:pointer;font-weight:700;color:var(--teal-deep)">Background reading (opens in browser)</summary>
+          <p style="margin-top:8px"><small>
+            • Dysbiosis in paediatric short bowel syndrome — <a href="https://pubmed.ncbi.nlm.nih.gov/?term=intestinal+dysbiosis+children+short+bowel+syndrome" target="_blank" rel="noopener">PubMed</a><br>
+            • Gut–brain–immune axis overview — <a href="https://www.ncbi.nlm.nih.gov/pmc/?term=gut+brain+axis+inflammation" target="_blank" rel="noopener">PMC</a><br>
+            • Benign nocturnal limb pains of childhood ("growing pains") — <a href="https://pubmed.ncbi.nlm.nih.gov/?term=growing+pains+children+nocturnal+limb" target="_blank" rel="noopener">PubMed</a><br>
+            • Faecal calprotectin (gut inflammation marker) — <a href="https://pubmed.ncbi.nlm.nih.gov/?term=fecal+calprotectin+children" target="_blank" rel="noopener">PubMed</a>
+          </small></p>
+        </details>
+      </div>
+    </section>
+
+    <!-- ===== PAGE: CHILD ===== -->
+    <section id="page-child" class="hide">
+      <div class="card kidwrap">
+        <div class="eyebrow">Just for you 🌟</div>
+        <h1>How are you feeling today?</h1>
+        <p class="muted">You don't have to answer everything. Only what you want! 🫶</p>
+
+        <div class="field">
+          <div class="label">😣 How much does your body hurt? <span class="scalename">· 0–10 pain scale</span></div>
+          <div class="pain-readout"><span class="pain-face" id="kidFace">😀</span><span class="pain-num" id="kidPainNum">0</span></div>
+          <input type="range" min="0" max="10" value="0" id="kidPain">
+          <div class="spread"><small>0 — none 😀</small><small>10 — really bad 😭</small></div>
+        </div>
+
+        <div class="field">
+          <div class="label">📍 Where does it hurt? <small class="muted">(tap any)</small></div>
+          <div class="opts" id="kidWhere">
+            <div class="opt kid" data-v="knees"><span class="em">🦵</span>Knees</div>
+            <div class="opt kid" data-v="feet"><span class="em">🦶</span>Feet</div>
+            <div class="opt kid" data-v="legs"><span class="em">🦴</span>Legs</div>
+            <div class="opt kid" data-v="tummy"><span class="em">🤰</span>Tummy</div>
+            <div class="opt kid" data-v="nowhere"><span class="em">✨</span>Nowhere!</div>
+          </div>
+        </div>
+
+        <div class="field">
+          <div class="label">😊 How do you feel overall?</div>
+          <div class="opts" id="kidMood">
+            <div class="opt kid" data-v="great"><span class="em">🤩</span>Great</div>
+            <div class="opt kid" data-v="ok"><span class="em">🙂</span>Okay</div>
+            <div class="opt kid" data-v="meh"><span class="em">😕</span>Meh</div>
+            <div class="opt kid" data-v="bad"><span class="em">😢</span>Bad</div>
+          </div>
+        </div>
+
+        <div class="field">
+          <div class="label">💧 Did you drink enough water?</div>
+          <div class="opts" id="kidDrink">
+            <div class="opt kid" data-v="lots"><span class="em">💦</span>Lots</div>
+            <div class="opt kid" data-v="some"><span class="em">💧</span>Some</div>
+            <div class="opt kid" data-v="little"><span class="em">🏜️</span>Not much</div>
+          </div>
+        </div>
+
+        <div class="field">
+          <div class="label">🍽️ Did you eat enough?</div>
+          <div class="opts" id="kidEat">
+            <div class="opt kid" data-v="lots"><span class="em">😋</span>Lots</div>
+            <div class="opt kid" data-v="normal"><span class="em">🍽️</span>Normal</div>
+            <div class="opt kid" data-v="little"><span class="em">🥄</span>A little</div>
+          </div>
+        </div>
+
+        <div class="field">
+          <div class="label">🏃 Did you run and play a lot?</div>
+          <div class="opts" id="kidPlay">
+            <div class="opt kid" data-v="lots"><span class="em">⚡</span>Tons</div>
+            <div class="opt kid" data-v="some"><span class="em">🤸</span>Some</div>
+            <div class="opt kid" data-v="rest"><span class="em">😴</span>Rest day</div>
+          </div>
+        </div>
+
+        <small class="muted" id="kidAuthorNote">Recorded by —</small>
+        <button class="btn coral block" id="kidSave" style="margin-top:6px">Save my day 🎉</button>
+      </div>
+    </section>
+
+    <!-- ===== PAGE: PARENT ===== -->
+    <section id="page-parent" class="hide">
+      <div class="card">
+        <div class="eyebrow">Parent observations</div>
+        <h1>Today's record</h1>
+
+        <div class="field">
+          <div class="label">Joint pain seen
+            <span class="scalename">· Numeric Rating Scale 0–10</span>
+            <a class="reflink" href="https://pubmed.ncbi.nlm.nih.gov/?term=numeric+pain+rating+scale+children" target="_blank" rel="noopener">why ↗</a>
+          </div>
+          <div class="pain-readout"><span class="pain-num" id="parPainNum">0</span></div>
+          <input type="range" min="0" max="10" value="0" id="parPain">
+          <div class="field" style="margin-top:6px">
+            <div class="label" style="font-size:.85rem">Pain timing</div>
+            <div class="opts" id="parPainTime">
+              <div class="opt" data-v="none">None</div>
+              <div class="opt" data-v="day">Daytime</div>
+              <div class="opt" data-v="evening">Evening</div>
+              <div class="opt" data-v="night">Night (woke up)</div>
+            </div>
+          </div>
+        </div>
+
+        <hr>
+
+        <div class="field">
+          <div class="label">Stool form
+            <span class="scalename">· Bristol Stool Form Scale</span>
+            <a class="reflink" href="https://en.wikipedia.org/wiki/Bristol_stool_scale" target="_blank" rel="noopener">scale ↗</a>
+          </div>
+          <small class="muted">Includes "nothing came out" for complete constipation days.</small>
+          <div class="opts" id="parBristol">
+            <div class="opt" data-v="0"><span class="em">🚫</span>0 · Nothing came out</div>
+            <div class="opt" data-v="1"><span class="em">🟤</span>1 · Hard lumps</div>
+            <div class="opt" data-v="2"><span class="em">🟫</span>2 · Lumpy sausage</div>
+            <div class="opt" data-v="3"><span class="em">🥖</span>3 · Cracked sausage</div>
+            <div class="opt" data-v="4"><span class="em">✅</span>4 · Smooth (ideal)</div>
+            <div class="opt" data-v="5"><span class="em">🟡</span>5 · Soft blobs</div>
+            <div class="opt" data-v="6"><span class="em">💧</span>6 · Mushy</div>
+            <div class="opt" data-v="7"><span class="em">🌊</span>7 · Watery (diarrhoea)</div>
+          </div>
+        </div>
+
+        <div class="field">
+          <div class="label">Stool colour</div>
+          <div class="opts" id="parColor">
+            <div class="opt" data-v="pale"><span class="em">⬜</span>Pale</div>
+            <div class="opt" data-v="yellow"><span class="em">🟨</span>Yellow</div>
+            <div class="opt" data-v="green"><span class="em">🟩</span>Green</div>
+            <div class="opt" data-v="brown"><span class="em">🟫</span>Brown</div>
+            <div class="opt" data-v="dark"><span class="em">⬛</span>Dark / black</div>
+          </div>
+          <small class="muted">Note: black or red stool warrants a call to the doctor.</small>
+        </div>
+
+        <div class="field">
+          <div class="label">Smell intensity</div>
+          <div class="opts" id="parSmell">
+            <div class="opt" data-v="none">None</div>
+            <div class="opt" data-v="mild">Mild</div>
+            <div class="opt" data-v="moderate">Moderate</div>
+            <div class="opt" data-v="strong">Strong / unusual</div>
+          </div>
+        </div>
+
+        <div class="field">
+          <div class="label">Soiling / accidents</div>
+          <div class="opts" id="parSoil">
+            <div class="opt" data-v="none">None</div>
+            <div class="opt" data-v="smudge">Light smudge</div>
+            <div class="opt" data-v="moderate">Moderate</div>
+            <div class="opt" data-v="heavy">Heavy</div>
+          </div>
+        </div>
+
+        <hr>
+
+        <div class="field">
+          <div class="label">Sugar / treats today</div>
+          <div class="opts" id="parSugar">
+            <div class="opt" data-v="none"><span class="em">🚫</span>None</div>
+            <div class="opt" data-v="some"><span class="em">🍪</span>Some</div>
+            <div class="opt" data-v="lots"><span class="em">🍭</span>A lot</div>
+          </div>
+        </div>
+
+        <div class="field">
+          <div class="label">Physical activity</div>
+          <div class="opts" id="parActivity">
+            <div class="opt" data-v="rest">Rest</div>
+            <div class="opt" data-v="light">Light</div>
+            <div class="opt" data-v="moderate">Moderate</div>
+            <div class="opt" data-v="heavy">Heavy</div>
+          </div>
+        </div>
+
+        <div class="field">
+          <div class="label">Probiotics taken?</div>
+          <div class="opts" id="parProbiotic">
+            <div class="opt" data-v="yes"><span class="em">✅</span>Yes</div>
+            <div class="opt" data-v="no"><span class="em">❌</span>No</div>
+          </div>
+        </div>
+
+        <div class="field">
+          <div class="label">Other supplements taken?</div>
+          <div class="opts" id="parSupp">
+            <div class="opt" data-v="yes"><span class="em">✅</span>Yes</div>
+            <div class="opt" data-v="partial"><span class="em">➗</span>Some</div>
+            <div class="opt" data-v="no"><span class="em">❌</span>No</div>
+          </div>
+        </div>
+
+        <div class="field">
+          <div class="label">Sleep quality last night</div>
+          <div class="opts" id="parSleep">
+            <div class="opt" data-v="good"><span class="em">😴</span>Good</div>
+            <div class="opt" data-v="ok"><span class="em">🛌</span>Okay</div>
+            <div class="opt" data-v="poor"><span class="em">🥱</span>Poor</div>
+          </div>
+        </div>
+
+        <div class="field">
+          <div class="label">Notes (food triggers, weather, mood…)</div>
+          <textarea id="parNotes" placeholder="Anything notable today"></textarea>
+        </div>
+
+        <div id="otherParent"></div>
+        <small class="muted" id="parAuthorNote">Saving as —</small>
+        <button class="btn block" id="parSave" style="margin-top:8px">Save my record</button>
+      </div>
+    </section>
+
+    <!-- ===== PAGE: LABS ===== -->
+    <section id="page-labs" class="hide">
+      <div class="card">
+        <div class="eyebrow">Monthly results</div>
+        <h1>Stool &amp; lab uploads</h1>
+        <p class="muted">Add a result roughly once a month. When you request the test, ask specifically for a <strong>gut microbiome analysis</strong> (metagenomic sequencing or 16S rRNA) plus <strong>faecal calprotectin</strong> for inflammation — a routine culture won't show dysbiosis.</p>
+
+        <div class="field">
+          <div class="label">Result date</div>
+          <input type="date" id="labDate">
+        </div>
+        <div class="field">
+          <div class="label">Calprotectin (µg/g, if known)</div>
+          <input type="text" id="labCalpro" placeholder="e.g. 120">
+        </div>
+        <div class="field">
+          <div class="label">Paste / type the result summary</div>
+          <textarea id="labText" placeholder="Microbiome diversity, notable bacteria, doctor's comments…"></textarea>
+        </div>
+        <button class="btn block" id="labSave">Save result</button>
+
+        <div class="banner info" style="margin-top:16px"><span>🤖</span><div><strong>AI review:</strong> with your family database connected, tap below to have Claude read this period's combined Mother + Father entries and summarise patterns. Your API key stays on your Worker, never in the app.</div></div>
+
+        <div class="seg" id="aiRangeSeg" style="margin:10px 0 8px">
+          <button data-r="30" class="active">Month</button>
+          <button data-r="90">Quarter</button>
+          <button data-r="365">Year</button>
+        </div>
+        <button class="btn coral block" id="aiBtn">Analyse this period with AI 🤖</button>
+        <div id="aiOut" style="margin-top:12px"></div>
+
+        <h3 style="margin-top:18px">Saved results</h3>
+        <div id="labList"><small class="muted">No results yet.</small></div>
+      </div>
+    </section>
+
+    <!-- ===== PAGE: INSIGHTS ===== -->
+    <section id="page-stats" class="hide">
+      <div class="card">
+        <div class="eyebrow">Patterns &amp; anomalies</div>
+        <h1>Insights</h1>
+        <div class="seg" id="rangeSeg" style="margin:8px 0 4px">
+          <button data-r="30" class="active">Month</button>
+          <button data-r="90">Quarter</button>
+          <button data-r="365">Year</button>
+        </div>
+        <small class="muted" id="rangeNote">Last 30 days</small>
+
+        <div class="stat-grid" style="margin-top:14px">
+          <div class="stat"><div class="big" id="sDays">0</div><div class="lab">days logged</div></div>
+          <div class="stat"><div class="big" id="sAvgPain">–</div><div class="lab">avg joint pain</div></div>
+          <div class="stat"><div class="big" id="sPainDays">0</div><div class="lab">pain days (≥3)</div></div>
+          <div class="stat"><div class="big" id="sHardGut">0</div><div class="lab">hard gut days</div></div>
+        </div>
+
+        <h3 style="margin-top:18px">What the data is hinting at</h3>
+        <div id="insights"><small class="muted">Log a few days to see patterns appear here.</small></div>
+
+        <h3 style="margin-top:18px">Pain by sugar level</h3>
+        <div id="sugarBars"></div>
+
+        <h3 style="margin-top:18px">Gut ↔ joint days that line up</h3>
+        <div id="overlapBox"><small class="muted">—</small></div>
+
+        <h3 style="margin-top:18px">Anomaly days</h3>
+        <p class="muted" style="margin-top:0"><small>Days that break the usual pattern — worth a closer look.</small></p>
+        <div id="anomalies"><small class="muted">—</small></div>
+      </div>
+    </section>
+
+    <!-- ===== PAGE: SETTINGS ===== -->
+    <section id="page-settings" class="hide">
+      <div class="card">
+        <div class="eyebrow">Settings</div>
+        <h1>Settings &amp; data</h1>
+
+        <h3 style="margin-top:14px">Child's theme song 🎵</h3>
+        <p class="muted" style="margin-top:2px">Paste a Spotify track link to show a play button on the child's page (works when online).</p>
+        <input type="text" id="spotifyUrl" placeholder="https://open.spotify.com/track/...">
+        <button class="btn ghost small" id="spotifySave" style="margin-top:8px">Save song</button>
+
+        <hr>
+        <h3>This device</h3>
+        <p class="muted" style="margin-top:2px">You are signed in as <strong id="meName">—</strong>. Switch if someone else uses this device.</p>
+        <div class="opts" id="switchWho">
+          <div class="opt" data-v="Mother"><span class="em">👩</span>Mother</div>
+          <div class="opt" data-v="Father"><span class="em">👨</span>Father</div>
+        </div>
+        <button class="btn ghost small" id="switchSave" style="margin-top:6px">Save</button>
+
+        <hr>
+        <h3>Export data</h3>
+        <p class="muted" style="margin-top:2px">Download everything as a file (for backup, or to paste into a Claude chat for the monthly review).</p>
+        <button class="btn ghost" id="exportBtn">Export all data</button>
+
+        <hr>
+        <h3>Privacy</h3>
+        <p class="muted" style="margin-top:2px">All data lives only in this browser, on this device. Clearing your browser's site data, or using a different device/browser, means it won't be here.</p>
+
+        <hr>
+        <h3 style="color:var(--bad)">Complete reset</h3>
+        <p class="muted" style="margin-top:2px">Erases all entries and consent so the journal can be handed to another family for a fresh start. Enter the reset code to confirm.</p>
+        <input type="password" id="resetCode" placeholder="Reset code" style="margin-bottom:10px">
+        <button class="btn danger block" id="resetBtn">Erase everything</button>
+      </div>
+      <p class="footnote">Gut &amp; Joint Journal · a private at-home tracking tool. Not a medical device and not a substitute for professional care. If you're worried about your child, contact a doctor.</p>
+    </section>
+  </div>
+
+  <nav class="tabs">
+    <button data-p="summary" class="active"><span class="ic">📋</span>Summary</button>
+    <button data-p="child"><span class="ic">🧒</span>Child</button>
+    <button data-p="parent"><span class="ic">👪</span>Parent</button>
+    <button data-p="labs"><span class="ic">🧪</span>Labs</button>
+    <button data-p="stats"><span class="ic">📊</span>Insights</button>
+    <button data-p="settings"><span class="ic">⚙️</span>More</button>
+  </nav>
+</div>
+
+<div class="saved-flash" id="flash">Saved ✓</div>
+<script>window.GJJ_CONFIG = { apiBase: "" };</script>
+<script>
 "use strict";
 /* Gut & Joint Journal — front-end.
    Data lives in your family Worker (Cloudflare D1). This file keeps an in-memory
@@ -413,3 +976,7 @@ function renderStats(days){
     refreshGate();
   }
 })();
+
+</script>
+</body>
+</html>
