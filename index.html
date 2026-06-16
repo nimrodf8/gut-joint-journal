@@ -116,10 +116,27 @@
   .footnote{font-size:.72rem;color:var(--muted);margin-top:18px;line-height:1.5}
   .entry-chip{display:inline-flex;gap:5px;align-items:center;background:#f1f4f3;border-radius:8px;padding:4px 9px;font-size:.78rem;margin:3px 4px 0 0}
 
+/* ---- v2 additions: flow nav, completion, multiselect, time ---- */
+.flowbar{display:flex;gap:10px;margin-top:16px}
+.flowbar .btn{flex:1}
+.timeseg{display:flex;border:1.5px solid var(--line);border-radius:12px;overflow:hidden;margin-top:4px}
+.timeseg button{flex:1;border:none;background:#fff;padding:11px 6px;font-family:var(--font);font-weight:700;color:var(--muted);cursor:pointer;font-size:.9rem;display:flex;flex-direction:column;align-items:center;gap:2px}
+.timeseg button .em{font-size:1.15rem}
+.timeseg button.active{background:var(--teal);color:#fff}
+.subfield{margin-top:10px;padding-left:4px;border-left:3px solid var(--teal-soft)}
+.ro-note{background:#eef6f5;border:1px solid var(--line);border-radius:11px;padding:10px 12px;font-size:.88rem;color:var(--teal-deep)}
+#doneScreen{position:fixed;inset:0;z-index:80;background:linear-gradient(160deg,#0f9d8f,#0a6f66);color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:30px}
+#doneScreen.hide{display:none}
+#doneScreen .checkring{width:120px;height:120px;border-radius:50%;background:rgba(255,255,255,.16);display:grid;place-items:center;font-size:4rem;margin-bottom:18px;animation:pop .4s ease}
+@keyframes pop{0%{transform:scale(.5);opacity:0}70%{transform:scale(1.1)}100%{transform:scale(1);opacity:1}}
+#doneScreen h1{color:#fff;font-size:1.8rem}
+#doneScreen p{color:#eafaf7;max-width:320px}
+#doneScreen .btn{background:#fff;color:var(--teal-deep);margin-top:18px}
+.msrow{display:flex;flex-wrap:wrap;gap:8px;margin-top:6px}
+
 </style>
 </head>
 <body>
-<!-- ================= CONNECT / CONSENT GATE ================= -->
 <div id="gate" class="wrap">
   <div class="card">
     <div class="logo" style="margin-bottom:10px">🌱</div>
@@ -145,7 +162,7 @@
     <small class="muted">Everything you enter here is tagged with this name.</small>
 
     <h3 style="margin-top:18px">Family code</h3>
-    <p class="muted" style="margin-top:2px">The shared password both parents use to reach your family database. Set it once on the Worker, then enter the same code on each device.</p>
+    <p class="muted" style="margin-top:2px">The shared password both parents use to reach your family database. Set it once on Cloudflare, then enter the same code on each device.</p>
     <input type="password" id="familyToken" placeholder="Family code">
 
     <details style="margin-top:10px"><summary style="cursor:pointer;color:var(--teal-deep);font-weight:700">Advanced: database URL</summary>
@@ -189,16 +206,24 @@
   </header>
 
   <div class="wrap">
-    <!-- date picker -->
-    <div class="card tight spread">
-      <div>
-        <div class="eyebrow">Logging for</div>
-        <input type="date" id="theDate" style="margin-top:4px">
+    <!-- date + time -->
+    <div class="card tight">
+      <div class="spread">
+        <div>
+          <div class="eyebrow">Logging for</div>
+          <input type="date" id="theDate" style="margin-top:4px">
+        </div>
+        <button class="btn ghost small" id="todayBtn">Today</button>
       </div>
-      <button class="btn ghost small" id="todayBtn">Today</button>
+      <div class="eyebrow" style="margin-top:12px">Time of day</div>
+      <div class="timeseg" id="timeSeg">
+        <button data-t="morning" class="active"><span class="em">🌅</span>Morning</button>
+        <button data-t="afternoon"><span class="em">☀️</span>Afternoon</button>
+        <button data-t="evening"><span class="em">🌙</span>Evening</button>
+      </div>
     </div>
 
-    <!-- ===== PAGE: SUMMARY ===== -->
+    <!-- ===== SUMMARY ===== -->
     <section id="page-summary">
       <div class="card">
         <div class="spread">
@@ -206,47 +231,26 @@
           <small class="muted" id="startedOn">Started —</small>
         </div>
         <h1 style="margin-top:10px">What we're watching, and why</h1>
-        <p>This child had necrotising enterocolitis as a newborn and, at three months, surgery that removed a large part of the bowel (short bowel syndrome), followed by treated neonatal sepsis. Since toddlerhood there has been recurring night-time joint pain in the legs, knees and feet, plus ongoing trouble with stool consistency and control.</p>
-
-        <h3 style="margin-top:16px">The pattern the family has noticed</h3>
-        <p>Joint-pain days seem to line up with harder tummy days, and both appear to worsen after high-sugar days. Acknowledging the pain (warmth, a hot-water bottle, comfort) seems to ease it.</p>
-
-        <div class="banner info"><span>🧪</span><div><strong>The hypothesis to test:</strong> that an imbalanced gut microbiome after the surgery (dysbiosis) may drive low-grade, body-wide inflammation that shows up <em>both</em> as gut symptoms and as joint pain — connected through the gut–immune–nervous-system "axis." This is a reasonable, research-supported <em>idea</em>, not a settled fact for this child.</div></div>
-
-        <h3 style="margin-top:16px">Honest caveats worth keeping in mind</h3>
-        <p style="margin-bottom:6px">A balanced log is far more persuasive to doctors than a confident theory, so it helps to hold these in view:</p>
-        <ul class="muted" style="line-height:1.6;margin-top:4px">
-          <li>Night-time leg pain in the knees/feet that eases with warmth and comfort is <strong>very common in healthy children</strong> ("benign nocturnal limb pains of childhood"). It may coexist with, or partly explain, what's seen here.</li>
-          <li>Two things happening on the same days shows <strong>correlation, not proof of cause</strong>. Tracking is how you tell a real link from a coincidence.</li>
-          <li>Physical activity, weather, sleep and stress can each move joint pain on their own — which is exactly why we log them.</li>
-        </ul>
-
-        <h3 style="margin-top:16px">What to do with this journal</h3>
-        <p>Log daily (the child's page is optional and kept light on purpose). Add a monthly stool/lab result when you have one. Watch the Insights page for patterns — then take the printout to a paediatric gastroenterologist and, if pain persists, a paediatric rheumatologist. Centres worth approaching in Israel include the paediatric GI units at Schneider Children's, Sheba (Tel Hashomer) and Hadassah.</p>
-
-        <div class="banner note"><span>⚠️</span><div>If there is blood in the stool, a swollen/red/hot joint, fever with joint pain, weight loss, or pain that wakes the child and won't settle — contact a doctor promptly. Those are not "track and wait" signs.</div></div>
-
-        <details style="margin-top:12px">
-          <summary style="cursor:pointer;font-weight:700;color:var(--teal-deep)">Background reading (opens in browser)</summary>
-          <p style="margin-top:8px"><small>
-            • Dysbiosis in paediatric short bowel syndrome — <a href="https://pubmed.ncbi.nlm.nih.gov/?term=intestinal+dysbiosis+children+short+bowel+syndrome" target="_blank" rel="noopener">PubMed</a><br>
-            • Gut–brain–immune axis overview — <a href="https://www.ncbi.nlm.nih.gov/pmc/?term=gut+brain+axis+inflammation" target="_blank" rel="noopener">PMC</a><br>
-            • Benign nocturnal limb pains of childhood ("growing pains") — <a href="https://pubmed.ncbi.nlm.nih.gov/?term=growing+pains+children+nocturnal+limb" target="_blank" rel="noopener">PubMed</a><br>
-            • Faecal calprotectin (gut inflammation marker) — <a href="https://pubmed.ncbi.nlm.nih.gov/?term=fecal+calprotectin+children" target="_blank" rel="noopener">PubMed</a>
-          </small></p>
-        </details>
+        <p>This child had necrotising enterocolitis as a newborn and, at three months, surgery that removed a large part of the bowel (short bowel syndrome), followed by treated neonatal sepsis. Since toddlerhood there has been recurring joint pain in the legs, knees and feet, plus ongoing trouble with stool consistency and control.</p>
+        <h3 style="margin-top:16px">The pattern noticed</h3>
+        <p>Joint-pain days seem to line up with harder tummy days, and both appear to worsen after high-sugar days. Acknowledging the pain (warmth, comfort) seems to ease it.</p>
+        <div class="banner info"><span>🧪</span><div><strong>The hypothesis to test:</strong> that an imbalanced gut microbiome after surgery may drive low-grade inflammation showing up <em>both</em> as gut symptoms and joint pain. A reasonable idea to explore with doctors — not a settled fact.</div></div>
+        <div class="banner note"><span>⚠️</span><div>Blood in stool, a hot/swollen joint, fever with joint pain, weight loss, or pain that won't settle → contact a doctor. Not "track and wait" signs.</div></div>
+        <div class="flowbar">
+          <button class="btn block" id="toChild">Start today's entry →</button>
+        </div>
       </div>
     </section>
 
-    <!-- ===== PAGE: CHILD ===== -->
+    <!-- ===== CHILD ===== -->
     <section id="page-child" class="hide">
       <div class="card kidwrap">
-        <div class="eyebrow">Just for you 🌟</div>
-        <h1>How are you feeling today?</h1>
-        <p class="muted">You don't have to answer everything. Only what you want! 🫶</p>
+        <div class="eyebrow">Just for you 🌟 · <span id="kidSlot">morning</span></div>
+        <h1>How are you feeling?</h1>
+        <p class="muted">Answer what you want — you can skip any of it 🫶</p>
 
         <div class="field">
-          <div class="label">😣 How much does your body hurt? <span class="scalename">· 0–10 pain scale</span></div>
+          <div class="label">😣 How much does your body hurt? <span class="scalename">· 0–10</span></div>
           <div class="pain-readout"><span class="pain-face" id="kidFace">😀</span><span class="pain-num" id="kidPainNum">0</span></div>
           <input type="range" min="0" max="10" value="0" id="kidPain">
           <div class="spread"><small>0 — none 😀</small><small>10 — really bad 😭</small></div>
@@ -267,6 +271,7 @@
           <div class="label">😊 How do you feel overall?</div>
           <div class="opts" id="kidMood">
             <div class="opt kid" data-v="great"><span class="em">🤩</span>Great</div>
+            <div class="opt kid" data-v="prettygood"><span class="em">😄</span>Pretty good</div>
             <div class="opt kid" data-v="ok"><span class="em">🙂</span>Okay</div>
             <div class="opt kid" data-v="meh"><span class="em">😕</span>Meh</div>
             <div class="opt kid" data-v="bad"><span class="em">😢</span>Bad</div>
@@ -276,76 +281,80 @@
         <div class="field">
           <div class="label">💧 Did you drink enough water?</div>
           <div class="opts" id="kidDrink">
+            <div class="opt kid" data-v="barely"><span class="em">🏜️</span>Barely any</div>
+            <div class="opt kid" data-v="little"><span class="em">💧</span>A little</div>
+            <div class="opt kid" data-v="some"><span class="em">🥤</span>Some</div>
             <div class="opt kid" data-v="lots"><span class="em">💦</span>Lots</div>
-            <div class="opt kid" data-v="some"><span class="em">💧</span>Some</div>
-            <div class="opt kid" data-v="little"><span class="em">🏜️</span>Not much</div>
+            <div class="opt kid" data-v="loads"><span class="em">🌊</span>Way too much</div>
           </div>
         </div>
 
         <div class="field">
           <div class="label">🍽️ Did you eat enough?</div>
           <div class="opts" id="kidEat">
-            <div class="opt kid" data-v="lots"><span class="em">😋</span>Lots</div>
+            <div class="opt kid" data-v="barely"><span class="em">🥄</span>Barely anything</div>
+            <div class="opt kid" data-v="little"><span class="em">🍪</span>A little</div>
             <div class="opt kid" data-v="normal"><span class="em">🍽️</span>Normal</div>
-            <div class="opt kid" data-v="little"><span class="em">🥄</span>A little</div>
+            <div class="opt kid" data-v="lots"><span class="em">😋</span>Lots</div>
+            <div class="opt kid" data-v="loads"><span class="em">🍔</span>Way too much</div>
           </div>
         </div>
 
         <div class="field">
-          <div class="label">🏃 Did you run and play a lot?</div>
+          <div class="label">🏃 Did you move around a lot?</div>
           <div class="opts" id="kidPlay">
-            <div class="opt kid" data-v="lots"><span class="em">⚡</span>Tons</div>
-            <div class="opt kid" data-v="some"><span class="em">🤸</span>Some</div>
-            <div class="opt kid" data-v="rest"><span class="em">😴</span>Rest day</div>
+            <div class="opt kid" data-v="rest"><span class="em">😴</span>Rested</div>
+            <div class="opt kid" data-v="light"><span class="em">🚶</span>Light walk</div>
+            <div class="opt kid" data-v="moderate"><span class="em">🤸</span>Moderate play</div>
+            <div class="opt kid" data-v="lots"><span class="em">⚽</span>Running / sports</div>
+            <div class="opt kid" data-v="intense"><span class="em">🥾</span>Hike / long walk</div>
           </div>
         </div>
 
         <small class="muted" id="kidAuthorNote">Recorded by —</small>
-        <button class="btn coral block" id="kidSave" style="margin-top:6px">Save my day 🎉</button>
+        <div class="flowbar">
+          <button class="btn ghost" id="childBack">← Back</button>
+          <button class="btn coral" id="toParent">Next: Parent →</button>
+        </div>
       </div>
     </section>
 
-    <!-- ===== PAGE: PARENT ===== -->
+    <!-- ===== PARENT ===== -->
     <section id="page-parent" class="hide">
       <div class="card">
-        <div class="eyebrow">Parent observations</div>
+        <div class="eyebrow">Parent observations · <span id="parSlot">morning</span></div>
         <h1>Today's record</h1>
 
         <div class="field">
-          <div class="label">Joint pain seen
-            <span class="scalename">· Numeric Rating Scale 0–10</span>
-            <a class="reflink" href="https://pubmed.ncbi.nlm.nih.gov/?term=numeric+pain+rating+scale+children" target="_blank" rel="noopener">why ↗</a>
-          </div>
+          <div class="label">Joint pain <span class="scalename">· 0–10</span></div>
           <div class="pain-readout"><span class="pain-num" id="parPainNum">0</span></div>
           <input type="range" min="0" max="10" value="0" id="parPain">
-          <div class="field" style="margin-top:6px">
-            <div class="label" style="font-size:.85rem">Pain timing</div>
-            <div class="opts" id="parPainTime">
-              <div class="opt" data-v="none">None</div>
-              <div class="opt" data-v="day">Daytime</div>
-              <div class="opt" data-v="evening">Evening</div>
-              <div class="opt" data-v="night">Night (woke up)</div>
-            </div>
+        </div>
+
+        <div class="field">
+          <div class="label">Pain timing</div>
+          <div class="opts" id="parPainTime">
+            <div class="opt" data-v="none">None</div>
+            <div class="opt" data-v="early">Early morning</div>
+            <div class="opt" data-v="day">Daytime</div>
+            <div class="opt" data-v="evening">Evening</div>
+            <div class="opt" data-v="night">Night (woke up)</div>
           </div>
         </div>
 
         <hr>
-
         <div class="field">
-          <div class="label">Stool form
-            <span class="scalename">· Bristol Stool Form Scale</span>
-            <a class="reflink" href="https://en.wikipedia.org/wiki/Bristol_stool_scale" target="_blank" rel="noopener">scale ↗</a>
-          </div>
-          <small class="muted">Includes "nothing came out" for complete constipation days.</small>
+          <div class="label">Stool form <span class="scalename">· Bristol</span>
+            <a class="reflink" href="https://en.wikipedia.org/wiki/Bristol_stool_scale" target="_blank" rel="noopener">scale ↗</a></div>
           <div class="opts" id="parBristol">
-            <div class="opt" data-v="0"><span class="em">🚫</span>0 · Nothing came out</div>
+            <div class="opt" data-v="0"><span class="em">🚫</span>0 · Nothing</div>
             <div class="opt" data-v="1"><span class="em">🟤</span>1 · Hard lumps</div>
-            <div class="opt" data-v="2"><span class="em">🟫</span>2 · Lumpy sausage</div>
-            <div class="opt" data-v="3"><span class="em">🥖</span>3 · Cracked sausage</div>
-            <div class="opt" data-v="4"><span class="em">✅</span>4 · Smooth (ideal)</div>
+            <div class="opt" data-v="2"><span class="em">🟫</span>2 · Lumpy</div>
+            <div class="opt" data-v="3"><span class="em">🥖</span>3 · Cracked</div>
+            <div class="opt" data-v="4"><span class="em">✅</span>4 · Smooth</div>
             <div class="opt" data-v="5"><span class="em">🟡</span>5 · Soft blobs</div>
             <div class="opt" data-v="6"><span class="em">💧</span>6 · Mushy</div>
-            <div class="opt" data-v="7"><span class="em">🌊</span>7 · Watery (diarrhoea)</div>
+            <div class="opt" data-v="7"><span class="em">🌊</span>7 · Watery</div>
           </div>
         </div>
 
@@ -354,11 +363,12 @@
           <div class="opts" id="parColor">
             <div class="opt" data-v="pale"><span class="em">⬜</span>Pale</div>
             <div class="opt" data-v="yellow"><span class="em">🟨</span>Yellow</div>
+            <div class="opt" data-v="orange"><span class="em">🟧</span>Orange</div>
             <div class="opt" data-v="green"><span class="em">🟩</span>Green</div>
             <div class="opt" data-v="brown"><span class="em">🟫</span>Brown</div>
             <div class="opt" data-v="dark"><span class="em">⬛</span>Dark / black</div>
           </div>
-          <small class="muted">Note: black or red stool warrants a call to the doctor.</small>
+          <small class="muted">Black or red → call the doctor.</small>
         </div>
 
         <div class="field">
@@ -367,7 +377,8 @@
             <div class="opt" data-v="none">None</div>
             <div class="opt" data-v="mild">Mild</div>
             <div class="opt" data-v="moderate">Moderate</div>
-            <div class="opt" data-v="strong">Strong / unusual</div>
+            <div class="opt" data-v="strong">Strong</div>
+            <div class="opt" data-v="verystrong">Very strong / unusual</div>
           </div>
         </div>
 
@@ -376,106 +387,154 @@
           <div class="opts" id="parSoil">
             <div class="opt" data-v="none">None</div>
             <div class="opt" data-v="smudge">Light smudge</div>
+            <div class="opt" data-v="noticeable">Noticeable</div>
             <div class="opt" data-v="moderate">Moderate</div>
             <div class="opt" data-v="heavy">Heavy</div>
           </div>
         </div>
 
-        <hr>
-
-        <div class="field">
-          <div class="label">Sugar / treats today</div>
-          <div class="opts" id="parSugar">
-            <div class="opt" data-v="none"><span class="em">🚫</span>None</div>
-            <div class="opt" data-v="some"><span class="em">🍪</span>Some</div>
-            <div class="opt" data-v="lots"><span class="em">🍭</span>A lot</div>
+        <div class="field" id="parUWWrap">
+          <div class="label">🛏️ Underwear when he woke up <span class="scalename">· morning only</span></div>
+          <small class="muted">The state first thing on waking — captures what happened overnight.</small>
+          <div class="opts" id="parUW">
+            <div class="opt" data-v="0"><span class="em">✨</span>Perfectly clean</div>
+            <div class="opt" data-v="1"><span class="em">🟢</span>Very clean</div>
+            <div class="opt" data-v="2"><span class="em">🙂</span>Mostly clean</div>
+            <div class="opt" data-v="3"><span class="em">🟡</span>Lightly soiled</div>
+            <div class="opt" data-v="4"><span class="em">🟠</span>Moderately soiled</div>
+            <div class="opt" data-v="5"><span class="em">🔴</span>Very soiled</div>
+            <div class="opt" data-v="6"><span class="em">⛔</span>Extremely soiled</div>
           </div>
         </div>
 
-        <div class="field">
+        <hr>
+        <!-- physical activity: conditional on child -->
+        <div class="field" id="parActivityWrap">
           <div class="label">Physical activity</div>
+          <div id="parActivityFromChild" class="ro-note hide"></div>
           <div class="opts" id="parActivity">
             <div class="opt" data-v="rest">Rest</div>
             <div class="opt" data-v="light">Light</div>
             <div class="opt" data-v="moderate">Moderate</div>
             <div class="opt" data-v="heavy">Heavy</div>
+            <div class="opt" data-v="intense">Very heavy / intense walk</div>
           </div>
         </div>
 
         <div class="field">
-          <div class="label">Probiotics taken?</div>
+          <div class="label">Sugar / treats</div>
+          <div class="opts" id="parSugar">
+            <div class="opt" data-v="none"><span class="em">🚫</span>None</div>
+            <div class="opt" data-v="alittle"><span class="em">🍬</span>A little</div>
+            <div class="opt" data-v="some"><span class="em">🍪</span>Some</div>
+            <div class="opt" data-v="quite"><span class="em">🧁</span>Quite a bit</div>
+            <div class="opt" data-v="lots"><span class="em">🍭</span>A lot</div>
+          </div>
+        </div>
+
+        <div class="field">
+          <div class="label">Probiotics <small class="muted">(tap all that apply)</small></div>
           <div class="opts" id="parProbiotic">
-            <div class="opt" data-v="yes"><span class="em">✅</span>Yes</div>
+            <div class="opt" data-v="regular"><span class="em">🍎</span>Yes — regular</div>
+            <div class="opt" data-v="jelly"><span class="em">🧃</span>Yes — jelly / cocktail</div>
+            <div class="opt" data-v="yogurt"><span class="em">🥛</span>Yes — yogurt</div>
             <div class="opt" data-v="no"><span class="em">❌</span>No</div>
           </div>
         </div>
 
         <div class="field">
-          <div class="label">Other supplements taken?</div>
+          <div class="label">Antibiotics?</div>
+          <div class="opts" id="parAntibiotic">
+            <div class="opt" data-v="no"><span class="em">❌</span>No</div>
+            <div class="opt" data-v="yes"><span class="em">💊</span>Yes</div>
+          </div>
+          <div class="subfield hide" id="parAntibioticDetail">
+            <div class="label" style="font-size:.88rem">Which one?</div>
+            <div class="opts" id="parAntibioticType">
+              <div class="opt" data-v="amoxicillin">Amoxicillin</div>
+              <div class="opt" data-v="augmentin">Augmentin</div>
+              <div class="opt" data-v="azithromycin">Azithromycin</div>
+              <div class="opt" data-v="cephalexin">Cephalexin</div>
+              <div class="opt" data-v="cefdinir">Cefdinir</div>
+              <div class="opt" data-v="metronidazole">Metronidazole</div>
+              <div class="opt" data-v="other">Other…</div>
+            </div>
+            <input type="text" id="parAntibioticOther" class="hide" placeholder="Type the antibiotic name" style="margin-top:8px">
+          </div>
+        </div>
+
+        <div class="field">
+          <div class="label">Other supplements <small class="muted">(tap all that apply)</small></div>
           <div class="opts" id="parSupp">
-            <div class="opt" data-v="yes"><span class="em">✅</span>Yes</div>
-            <div class="opt" data-v="partial"><span class="em">➗</span>Some</div>
-            <div class="opt" data-v="no"><span class="em">❌</span>No</div>
+            <div class="opt" data-v="magnesium">Magnesium</div>
+            <div class="opt" data-v="iron">Iron</div>
+            <div class="opt" data-v="fiber">Fiber</div>
+            <div class="opt" data-v="calcium">Calcium</div>
+            <div class="opt" data-v="vitd">Vitamin D</div>
+            <div class="opt" data-v="zinc">Zinc</div>
+            <div class="opt" data-v="omega3">Omega-3</div>
+            <div class="opt" data-v="other">Other…</div>
           </div>
+          <input type="text" id="parSuppOther" class="hide" placeholder="Type other supplement(s)" style="margin-top:8px">
         </div>
 
         <div class="field">
-          <div class="label">Sleep quality last night</div>
+          <div class="label">Sleep last night</div>
           <div class="opts" id="parSleep">
             <div class="opt" data-v="good"><span class="em">😴</span>Good</div>
-            <div class="opt" data-v="ok"><span class="em">🛌</span>Okay</div>
+            <div class="opt" data-v="prettygood"><span class="em">🛌</span>Pretty good</div>
+            <div class="opt" data-v="ok"><span class="em">😐</span>Okay</div>
             <div class="opt" data-v="poor"><span class="em">🥱</span>Poor</div>
+            <div class="opt" data-v="verypoor"><span class="em">😣</span>Very poor</div>
           </div>
         </div>
 
         <div class="field">
-          <div class="label">Notes (food triggers, weather, mood…)</div>
-          <textarea id="parNotes" placeholder="Anything notable today"></textarea>
+          <div class="label">Notes</div>
+          <textarea id="parNotes" placeholder="Food triggers, weather, mood…"></textarea>
         </div>
 
         <div id="otherParent"></div>
         <small class="muted" id="parAuthorNote">Saving as —</small>
-        <button class="btn block" id="parSave" style="margin-top:8px">Save my record</button>
+        <div class="flowbar">
+          <button class="btn ghost" id="parBack">← Back</button>
+          <button class="btn" id="toLabs">Next: Labs</button>
+        </div>
+        <button class="btn coral block" id="doneToday" style="margin-top:10px">✓ Done for today</button>
       </div>
     </section>
 
-    <!-- ===== PAGE: LABS ===== -->
+    <!-- ===== LABS ===== -->
     <section id="page-labs" class="hide">
       <div class="card">
         <div class="eyebrow">Monthly results</div>
         <h1>Stool &amp; lab uploads</h1>
-        <p class="muted">Add a result roughly once a month. When you request the test, ask specifically for a <strong>gut microbiome analysis</strong> (metagenomic sequencing or 16S rRNA) plus <strong>faecal calprotectin</strong> for inflammation — a routine culture won't show dysbiosis.</p>
-
-        <div class="field">
-          <div class="label">Result date</div>
-          <input type="date" id="labDate">
-        </div>
-        <div class="field">
-          <div class="label">Calprotectin (µg/g, if known)</div>
-          <input type="text" id="labCalpro" placeholder="e.g. 120">
-        </div>
-        <div class="field">
-          <div class="label">Paste / type the result summary</div>
-          <textarea id="labText" placeholder="Microbiome diversity, notable bacteria, doctor's comments…"></textarea>
-        </div>
+        <p class="muted">Ask for a <strong>gut microbiome analysis</strong> (metagenomic or 16S) plus <strong>faecal calprotectin</strong>. A routine culture won't show dysbiosis.</p>
+        <div class="field"><div class="label">Result date</div><input type="date" id="labDate"></div>
+        <div class="field"><div class="label">Calprotectin (µg/g)</div><input type="text" id="labCalpro" placeholder="e.g. 120"></div>
+        <div class="field"><div class="label">Result summary</div><textarea id="labText" placeholder="Diversity, notable bacteria, doctor's comments…"></textarea></div>
         <button class="btn block" id="labSave">Save result</button>
 
-        <div class="banner info" style="margin-top:16px"><span>🤖</span><div><strong>AI review:</strong> with your family database connected, tap below to have Claude read this period's combined Mother + Father entries and summarise patterns. Your API key stays on your Worker, never in the app.</div></div>
-
+        <div class="banner info" style="margin-top:16px"><span>🤖</span><div><strong>AI review:</strong> tap below to have Claude read this period's combined entries and summarise patterns.</div></div>
         <div class="seg" id="aiRangeSeg" style="margin:10px 0 8px">
           <button data-r="30" class="active">Month</button>
           <button data-r="90">Quarter</button>
           <button data-r="365">Year</button>
         </div>
-        <button class="btn coral block" id="aiBtn">Analyse this period with AI 🤖</button>
+        <button class="btn coral block" id="aiBtn">Analyse with AI 🤖</button>
         <div id="aiOut" style="margin-top:12px"></div>
 
         <h3 style="margin-top:18px">Saved results</h3>
         <div id="labList"><small class="muted">No results yet.</small></div>
+
+        <div class="flowbar">
+          <button class="btn ghost" id="labsBack">← Back</button>
+          <button class="btn coral" id="labsDone">✓ Done for today</button>
+        </div>
       </div>
     </section>
 
-    <!-- ===== PAGE: INSIGHTS ===== -->
+    <!-- ===== INSIGHTS ===== -->
     <section id="page-stats" class="hide">
       <div class="card">
         <div class="eyebrow">Patterns &amp; anomalies</div>
@@ -488,63 +547,58 @@
         <small class="muted" id="rangeNote">Last 30 days</small>
 
         <div class="stat-grid" style="margin-top:14px">
-          <div class="stat"><div class="big" id="sDays">0</div><div class="lab">days logged</div></div>
+          <div class="stat"><div class="big" id="sDays">0</div><div class="lab">entries logged</div></div>
           <div class="stat"><div class="big" id="sAvgPain">–</div><div class="lab">avg joint pain</div></div>
-          <div class="stat"><div class="big" id="sPainDays">0</div><div class="lab">pain days (≥3)</div></div>
-          <div class="stat"><div class="big" id="sHardGut">0</div><div class="lab">hard gut days</div></div>
+          <div class="stat"><div class="big" id="sPainDays">0</div><div class="lab">pain entries (≥3)</div></div>
+          <div class="stat"><div class="big" id="sHardGut">0</div><div class="lab">hard gut entries</div></div>
         </div>
 
-        <h3 style="margin-top:18px">What the data is hinting at</h3>
-        <div id="insights"><small class="muted">Log a few days to see patterns appear here.</small></div>
+        <h3 style="margin-top:18px">Pain by time of day</h3>
+        <div id="timeBars"></div>
+
+        <h3 style="margin-top:18px">Connections — what links to what</h3>
+        <p class="muted" style="margin-top:0"><small>The engine checks every factor against the others (including overnight → morning, and day → next day) and surfaces the relationships that stand out. Links are clues, not proof of cause.</small></p>
+        <div id="connections"><small class="muted">Log ~2 weeks for connections to appear.</small></div>
+
+        <h3 style="margin-top:18px">What the data hints at</h3>
+        <div id="insights"><small class="muted">Log a few entries to see patterns.</small></div>
 
         <h3 style="margin-top:18px">Pain by sugar level</h3>
         <div id="sugarBars"></div>
 
-        <h3 style="margin-top:18px">Gut ↔ joint days that line up</h3>
+        <h3 style="margin-top:18px">Gut ↔ joint entries that line up</h3>
         <div id="overlapBox"><small class="muted">—</small></div>
 
-        <h3 style="margin-top:18px">Anomaly days</h3>
-        <p class="muted" style="margin-top:0"><small>Days that break the usual pattern — worth a closer look.</small></p>
+        <h3 style="margin-top:18px">Anomaly entries</h3>
         <div id="anomalies"><small class="muted">—</small></div>
       </div>
     </section>
 
-    <!-- ===== PAGE: SETTINGS ===== -->
+    <!-- ===== SETTINGS ===== -->
     <section id="page-settings" class="hide">
       <div class="card">
         <div class="eyebrow">Settings</div>
         <h1>Settings &amp; data</h1>
-
         <h3 style="margin-top:14px">Child's theme song 🎵</h3>
-        <p class="muted" style="margin-top:2px">Paste a Spotify track link to show a play button on the child's page (works when online).</p>
         <input type="text" id="spotifyUrl" placeholder="https://open.spotify.com/track/...">
         <button class="btn ghost small" id="spotifySave" style="margin-top:8px">Save song</button>
-
         <hr>
         <h3>This device</h3>
-        <p class="muted" style="margin-top:2px">You are signed in as <strong id="meName">—</strong>. Switch if someone else uses this device.</p>
+        <p class="muted" style="margin-top:2px">You are <strong id="meName">—</strong>.</p>
         <div class="opts" id="switchWho">
           <div class="opt" data-v="Mother"><span class="em">👩</span>Mother</div>
           <div class="opt" data-v="Father"><span class="em">👨</span>Father</div>
         </div>
         <button class="btn ghost small" id="switchSave" style="margin-top:6px">Save</button>
-
         <hr>
         <h3>Export data</h3>
-        <p class="muted" style="margin-top:2px">Download everything as a file (for backup, or to paste into a Claude chat for the monthly review).</p>
         <button class="btn ghost" id="exportBtn">Export all data</button>
-
-        <hr>
-        <h3>Privacy</h3>
-        <p class="muted" style="margin-top:2px">All data lives only in this browser, on this device. Clearing your browser's site data, or using a different device/browser, means it won't be here.</p>
-
         <hr>
         <h3 style="color:var(--bad)">Complete reset</h3>
-        <p class="muted" style="margin-top:2px">Erases all entries and consent so the journal can be handed to another family for a fresh start. Enter the reset code to confirm.</p>
+        <p class="muted" style="margin-top:2px">Erases the whole family database. Enter the code to confirm.</p>
         <input type="password" id="resetCode" placeholder="Reset code" style="margin-bottom:10px">
         <button class="btn danger block" id="resetBtn">Erase everything</button>
       </div>
-      <p class="footnote">Gut &amp; Joint Journal · a private at-home tracking tool. Not a medical device and not a substitute for professional care. If you're worried about your child, contact a doctor.</p>
     </section>
   </div>
 
@@ -558,36 +612,36 @@
   </nav>
 </div>
 
+<!-- completion overlay -->
+<div id="doneScreen" class="hide">
+  <div class="checkring">✓</div>
+  <h1>All done! 🎉</h1>
+  <p id="doneMsg">Today's entry is saved and synced. Nice work keeping the journal going.</p>
+  <button class="btn" id="doneClose">Close</button>
+</div>
 <div class="saved-flash" id="flash">Saved ✓</div>
 <script>window.GJJ_CONFIG = { apiBase: "" };</script>
 <script>
 "use strict";
-/* Gut & Joint Journal — front-end.
-   Data lives in your family Worker (Cloudflare D1). This file keeps an in-memory
-   mirror (DB) shaped the way the stats code expects. Only device-local settings
-   (who you are, the family code, the database URL) are kept in localStorage. */
+/* Gut & Joint Journal v2 — time-slot entries (morning/afternoon/evening),
+   guided flow, two-parent attribution, cloud sync via the family Worker. */
 
 const RESET_CODE = "2707";
 const DEVKEY = "gjj_device_v1";
 const $  = s => document.querySelector(s);
 const $$ = s => Array.from(document.querySelectorAll(s));
 const todayStr = () => new Date().toISOString().slice(0,10);
+const SLOTS = ["morning","afternoon","evening"];
 
-/* ---------- device-local config ---------- */
+/* ---------- device config ---------- */
 function loadDev(){ try{ return JSON.parse(localStorage.getItem(DEVKEY)) || {}; }catch(e){ return {}; } }
 function saveDev(){ localStorage.setItem(DEVKEY, JSON.stringify(DEV)); }
-let DEV = loadDev();                 // { me, familyToken, apiBase, consent:{p1,p2} }
+let DEV = loadDev();
+function apiBase(){ const b = DEV.apiBase || (window.GJJ_CONFIG && window.GJJ_CONFIG.apiBase) || ""; return b.replace(/\/+$/,""); }
 
-function apiBase(){
-  const b = DEV.apiBase || (window.GJJ_CONFIG && window.GJJ_CONFIG.apiBase) || "";
-  return b.replace(/\/+$/,"");
-}
-
-/* ---------- API client ---------- */
 async function api(path, opts){
   opts = opts || {};
-  const base = apiBase();
-  if(!base) throw new Error("No database URL set");
+  const base = apiBase(); if(!base) throw new Error("No database URL set");
   const r = await fetch(base + path, {
     method: opts.method || "GET",
     headers: Object.assign({ "Content-Type":"application/json", "X-Family-Token": DEV.familyToken || "" }, opts.headers||{}),
@@ -597,49 +651,49 @@ async function api(path, opts){
   return r;
 }
 
-/* ---------- in-memory mirror ---------- */
+/* ---------- in-memory mirror ----------
+   DB.entries[date][slot] = { child:{}, parentByAuthor:{Mother,Father}, parent:{merged} } */
 let DB = { startDate:null, childCode:"", spotify:"", labs:[], entries:{} };
-// entries[date] = { child:{...,_by}, parentByAuthor:{Mother:{}, Father:{}}, parent:{merged} }
 
+function blankSlot(){ return { child:null, parentByAuthor:{}, parent:null }; }
 function mergeParent(byAuthor){
-  const arr = Object.entries(byAuthor||{}).map(([author,v])=>Object.assign({_author:author}, v));
+  const arr = Object.entries(byAuthor||{}).map(([a,v])=>Object.assign({_author:a}, v));
   if(!arr.length) return null;
   const latest = arr.slice().sort((a,b)=>(a._at||"").localeCompare(b._at||"")).pop();
   const m = Object.assign({}, latest);
-  m.pain = Math.max.apply(null, arr.map(x=>+x.pain||0));   // worst-case pain across parents
+  m.pain = Math.max.apply(null, arr.map(x=>+x.pain||0));
   return m;
 }
-
-function rebuildMerges(){ Object.values(DB.entries).forEach(e=>{ e.parent = mergeParent(e.parentByAuthor); }); }
+function slotOf(date,slot,create){
+  if(!DB.entries[date]) { if(!create) return null; DB.entries[date] = {}; }
+  if(!DB.entries[date][slot]) { if(!create) return null; DB.entries[date][slot] = blankSlot(); }
+  return DB.entries[date][slot];
+}
 
 async function pull(){
-  const r = await api("/data");
-  if(!r.ok) throw new Error("Could not load data ("+r.status+")");
+  const r = await api("/data"); if(!r.ok) throw new Error("Could not load data ("+r.status+")");
   const j = await r.json();
-  DB.startDate = j.meta.startDate;
-  DB.childCode = j.meta.childCode || "";
-  DB.spotify   = j.meta.spotify || "";
-  DB.labs      = j.labs || [];
-  DB.entries   = {};
+  DB.startDate = j.meta.startDate; DB.childCode = j.meta.childCode||""; DB.spotify = j.meta.spotify||"";
+  DB.labs = j.labs || []; DB.entries = {};
   (j.entries||[]).forEach(row=>{
-    const d = row.date;
-    DB.entries[d] = DB.entries[d] || { child:null, parentByAuthor:{} };
-    const p = row.payload || {};
-    p._at = row.updated_at;
-    if(row.section === "child"){ p._by = row.author; DB.entries[d].child = p; }
-    else { DB.entries[d].parentByAuthor[row.author] = p; }
+    const time = row.time || "morning";
+    const s = slotOf(row.date, time, true);
+    const p = row.payload || {}; p._at = row.updated_at;
+    if(row.section === "child"){ p._by = row.author; s.child = p; }
+    else { s.parentByAuthor[row.author] = p; }
   });
-  rebuildMerges();
+  Object.values(DB.entries).forEach(day => Object.values(day).forEach(s => s.parent = mergeParent(s.parentByAuthor)));
 }
 
 function flash(msg){ const f=$("#flash"); f.textContent=msg||"Saved ✓"; f.classList.add("show"); setTimeout(()=>f.classList.remove("show"),1200); }
 
-/* ---------- consent / connect gate ---------- */
-function setupGroup(sel, multi){
+/* ---------- option-group helpers ---------- */
+function setupGroup(sel, multi, onChange){
   $$(sel+" .opt").forEach(opt=>opt.addEventListener("click",()=>{
     if(multi){ opt.classList.toggle("sel"); }
     else { $$(sel+" .opt").forEach(o=>o.classList.remove("sel")); opt.classList.add("sel"); }
     if(sel==="#whoami") refreshGate();
+    if(onChange) onChange(opt);
   }));
 }
 function getSingle(sel){ const el=$(sel+" .sel"); return el?el.dataset.v:null; }
@@ -647,334 +701,412 @@ function getMulti(sel){ return $$(sel+" .sel").map(e=>e.dataset.v); }
 function setSingle(sel,val){ $$(sel+" .opt").forEach(o=>o.classList.toggle("sel",o.dataset.v===val)); }
 function setMulti(sel,vals){ const a=vals||[]; $$(sel+" .opt").forEach(o=>o.classList.toggle("sel",a.includes(o.dataset.v))); }
 
+/* ---------- gate ---------- */
 setupGroup("#whoami", false);
-
 function refreshGate(){
-  const me = getSingle("#whoami");
-  const tok = $("#familyToken").value.trim();
+  const me=getSingle("#whoami"), tok=$("#familyToken").value.trim();
   const p1=$("#parent1").checked, p2=$("#parent2").checked;
-  $("#p1lab").classList.toggle("done",p1);
-  $("#p2lab").classList.toggle("done",p2);
-  const ready = me && tok && (p1||p2);
-  $("#startBtn").disabled = !ready;
+  $("#p1lab").classList.toggle("done",p1); $("#p2lab").classList.toggle("done",p2);
+  $("#startBtn").disabled = !(me && tok && (p1||p2));
   $("#gateHint").textContent = !me ? "Choose who you are on this device."
-    : !tok ? "Enter your family code."
-    : !(p1||p2) ? "At least one parent must check the box."
-    : (p1&&p2) ? "All set — connect to start." : "Ready. The second box keeps this notice until both have checked.";
+    : !tok ? "Enter your family code." : !(p1||p2) ? "At least one parent must check the box."
+    : (p1&&p2) ? "All set — connect to start." : "Ready. Second box keeps this notice until both checked.";
 }
 ["#familyToken","#apiBase","#childCode"].forEach(s=>{ const el=$(s); if(el) el.addEventListener("input",refreshGate); });
 $("#parent1").addEventListener("change",refreshGate);
 $("#parent2").addEventListener("change",refreshGate);
-
 $("#startBtn").addEventListener("click",async()=>{
-  DEV.me = getSingle("#whoami");
-  DEV.familyToken = $("#familyToken").value.trim();
-  const ab = $("#apiBase").value.trim(); if(ab) DEV.apiBase = ab;
-  DEV.consent = { p1:$("#parent1").checked, p2:$("#parent2").checked, when:new Date().toISOString() };
-  saveDev();
-  $("#gateHint").textContent = "Connecting…";
-  try{
-    await api("/meta", { method:"PUT", body:{ ensureStart:true, childCode: $("#childCode").value.trim() } });
-    await enterApp();
-  }catch(e){
-    $("#gateHint").textContent = "Couldn't connect: " + e.message + ". Check the family code and database URL.";
-  }
+  DEV.me=getSingle("#whoami"); DEV.familyToken=$("#familyToken").value.trim();
+  const ab=$("#apiBase").value.trim(); if(ab) DEV.apiBase=ab;
+  DEV.consent={ p1:$("#parent1").checked, p2:$("#parent2").checked, when:new Date().toISOString() };
+  saveDev(); $("#gateHint").textContent="Connecting…";
+  try{ await api("/meta",{method:"PUT",body:{ensureStart:true,childCode:$("#childCode").value.trim()}}); await enterApp(); }
+  catch(e){ $("#gateHint").textContent="Couldn't connect: "+e.message+". Check the family code and database URL."; }
 });
+
+/* ---------- current date/time ---------- */
+let curTime = "morning";
+function setTime(t){ curTime=t; $$("#timeSeg button").forEach(b=>b.classList.toggle("active",b.dataset.t===t));
+  $("#kidSlot").textContent=t; $("#parSlot").textContent=t; loadSlot(); }
+$$("#timeSeg button").forEach(b=>b.addEventListener("click",()=>setTime(b.dataset.t)));
+$("#theDate").addEventListener("change",loadSlot);
+$("#todayBtn").addEventListener("click",()=>{ $("#theDate").value=todayStr(); loadSlot(); });
+function defaultSlotForNow(){ const h=new Date().getHours(); return h<12?"morning":h<17?"afternoon":"evening"; }
 
 /* ---------- enter app ---------- */
 async function enterApp(){
   await pull();
-  $("#gate").classList.add("hide");
-  $("#app").classList.remove("hide");
-  const d = todayStr();
-  $("#theDate").value = d; $("#labDate").value = d;
-  $("#spotifyUrl").value = DB.spotify || "";
-  setSingle("#switchWho", DEV.me);
-  paintIdentity();
-  updateHeader();
-  loadDay(d);
-  renderLabs();
-  renderStats(30);
+  $("#gate").classList.add("hide"); $("#app").classList.remove("hide");
+  $("#theDate").value=todayStr(); $("#labDate").value=todayStr();
+  $("#spotifyUrl").value=DB.spotify||""; setSingle("#switchWho",DEV.me);
+  setTime(defaultSlotForNow());
+  paintIdentity(); updateHeader(); renderLabs(); renderStats(30);
 }
 function paintIdentity(){
-  $("#userBadge").textContent = DEV.me || "—";
-  if($("#meName")) $("#meName").textContent = DEV.me || "—";
-  if($("#parAuthorNote")) $("#parAuthorNote").textContent = "Saving as " + (DEV.me||"—");
-  if($("#kidAuthorNote")) $("#kidAuthorNote").textContent = "Recorded by " + (DEV.me||"—");
+  $("#userBadge").textContent=DEV.me||"—";
+  if($("#meName")) $("#meName").textContent=DEV.me||"—";
+  $("#parAuthorNote").textContent="Saving as "+(DEV.me||"—");
+  $("#kidAuthorNote").textContent="Recorded by "+(DEV.me||"—");
 }
 function updateHeader(){
-  $("#hdrSub").textContent = DB.childCode ? ("For "+DB.childCode) : "Family journal";
-  if(DB.startDate){
-    const start=new Date(DB.startDate);
-    const days=Math.floor((new Date(todayStr())-start)/86400000)+1;
+  $("#hdrSub").textContent=DB.childCode?("For "+DB.childCode):"Family journal";
+  if(DB.startDate){ const s=new Date(DB.startDate);
+    const days=Math.floor((new Date(todayStr())-s)/86400000)+1;
     $("#dayCount").textContent="Day "+Math.max(1,days);
-    $("#startedOn").textContent="Started "+start.toLocaleDateString();
-  }
+    $("#startedOn").textContent="Started "+s.toLocaleDateString(); }
 }
 
-/* ---------- tab nav ---------- */
+/* ---------- tab + flow nav ---------- */
 const pages=["summary","child","parent","labs","stats","settings"];
-$$("nav.tabs button").forEach(b=>b.addEventListener("click",()=>{
-  const p=b.dataset.p;
-  $$("nav.tabs button").forEach(x=>x.classList.toggle("active",x===b));
+function gotoPage(p){
+  $$("nav.tabs button").forEach(x=>x.classList.toggle("active",x.dataset.p===p));
   pages.forEach(pg=>$("#page-"+pg).classList.toggle("hide",pg!==p));
   if(p==="stats") renderStats(currentRange);
   window.scrollTo(0,0);
-}));
+}
+$$("nav.tabs button").forEach(b=>b.addEventListener("click",()=>gotoPage(b.dataset.p)));
+$("#toChild").addEventListener("click",()=>gotoPage("child"));
+$("#childBack").addEventListener("click",()=>gotoPage("summary"));
+$("#parBack").addEventListener("click",()=>gotoPage("child"));
+$("#labsBack").addEventListener("click",()=>gotoPage("parent"));
+$("#doneClose").addEventListener("click",()=>{ $("#doneScreen").classList.add("hide"); gotoPage("summary"); });
+function showDone(){
+  $("#doneMsg").textContent="Saved for "+($("#theDate").value)+" · "+curTime+". Synced for both parents. 🌱";
+  $("#doneScreen").classList.remove("hide");
+}
 
-/* ---------- date ---------- */
-$("#theDate").addEventListener("change",e=>loadDay(e.target.value));
-$("#todayBtn").addEventListener("click",()=>{ const d=todayStr(); $("#theDate").value=d; loadDay(d); });
-
-/* ---------- option groups ---------- */
-["#kidWhere"].forEach(s=>setupGroup(s,true));
-["#kidMood","#kidDrink","#kidEat","#kidPlay","#parPainTime","#parBristol","#parColor","#parSmell","#parSoil","#parSugar","#parActivity","#parProbiotic","#parSupp","#parSleep","#switchWho"].forEach(s=>setupGroup(s,false));
+/* ---------- groups ---------- */
+setupGroup("#kidWhere", true);
+["#kidMood","#kidDrink","#kidEat","#kidPlay","#parPainTime","#parBristol","#parColor","#parSmell","#parSoil","#parUW","#parActivity","#parSugar","#parSleep","#switchWho"].forEach(s=>setupGroup(s,false));
+setupGroup("#parProbiotic", true, (opt)=>{
+  if(opt.dataset.v==="no" && opt.classList.contains("sel")) $$("#parProbiotic .opt").forEach(o=>{ if(o.dataset.v!=="no") o.classList.remove("sel"); });
+  else if(opt.dataset.v!=="no" && opt.classList.contains("sel")){ const no=$('#parProbiotic .opt[data-v="no"]'); if(no) no.classList.remove("sel"); }
+});
+setupGroup("#parAntibiotic", false, ()=>{ $("#parAntibioticDetail").classList.toggle("hide", getSingle("#parAntibiotic")!=="yes"); });
+setupGroup("#parAntibioticType", false, ()=>{ $("#parAntibioticOther").classList.toggle("hide", getSingle("#parAntibioticType")!=="other"); });
+setupGroup("#parSupp", true, ()=>{ $("#parSuppOther").classList.toggle("hide", !getMulti("#parSupp").includes("other")); });
 
 const faces=["😀","🙂","🙂","😐","😟","😣","😖","😫","😩","😢","😭"];
 $("#kidPain").addEventListener("input",e=>{ const v=+e.target.value; $("#kidPainNum").textContent=v; $("#kidFace").textContent=faces[v]; });
 $("#parPain").addEventListener("input",e=>{ $("#parPainNum").textContent=+e.target.value; });
 
-/* ---------- load a day into the forms ---------- */
-function loadDay(date){
-  const e = DB.entries[date] || {};
-  const c = e.child || {};
-  const mine = (e.parentByAuthor && e.parentByAuthor[DEV.me]) || {};
-  // child
+const PLAY_LABEL={rest:"Rested",light:"Light walk",moderate:"Moderate play",lots:"Running / sports",intense:"Hike / long walk"};
+
+/* ---------- load current slot into forms ---------- */
+function loadSlot(){
+  const date=$("#theDate").value;
+  const s = slotOf(date,curTime,false) || blankSlot();
+  const c = s.child||{}, mine = s.parentByAuthor[DEV.me]||{};
+  $("#kidSlot").textContent=curTime; $("#parSlot").textContent=curTime;
   $("#kidPain").value=c.pain||0; $("#kidPainNum").textContent=c.pain||0; $("#kidFace").textContent=faces[c.pain||0];
-  setMulti("#kidWhere", c.where); setSingle("#kidMood", c.mood); setSingle("#kidDrink", c.drink);
-  setSingle("#kidEat", c.eat); setSingle("#kidPlay", c.play);
-  // parent (current user's own row)
+  setMulti("#kidWhere",c.where); setSingle("#kidMood",c.mood); setSingle("#kidDrink",c.drink);
+  setSingle("#kidEat",c.eat); setSingle("#kidPlay",c.play);
   $("#parPain").value=mine.pain||0; $("#parPainNum").textContent=mine.pain||0;
-  setSingle("#parPainTime", mine.painTime); setSingle("#parBristol", mine.bristol);
-  setSingle("#parColor", mine.color); setSingle("#parSmell", mine.smell);
-  setSingle("#parSoil", mine.soil); setSingle("#parSugar", mine.sugar);
-  setSingle("#parActivity", mine.activity); setSingle("#parProbiotic", mine.probiotic);
-  setSingle("#parSupp", mine.supp); setSingle("#parSleep", mine.sleep);
-  $("#parNotes").value = mine.notes || "";
-  renderOtherParent(date);
+  setSingle("#parPainTime",mine.painTime); setSingle("#parBristol",mine.bristol);
+  setSingle("#parColor",mine.color); setSingle("#parSmell",mine.smell); setSingle("#parSoil",mine.soil);
+  setSingle("#parSugar",mine.sugar); setSingle("#parSleep",mine.sleep);
+  setSingle("#parUW",mine.morningUnderwear);
+  $("#parUWWrap").classList.toggle("hide", curTime!=="morning");
+  setMulti("#parProbiotic",mine.probiotic);
+  setSingle("#parAntibiotic",mine.antibiotic); $("#parAntibioticDetail").classList.toggle("hide",mine.antibiotic!=="yes");
+  setSingle("#parAntibioticType",mine.antibioticType); $("#parAntibioticOther").classList.toggle("hide",mine.antibioticType!=="other");
+  $("#parAntibioticOther").value=mine.antibioticOther||"";
+  setMulti("#parSupp",mine.supp); $("#parSuppOther").classList.toggle("hide",!(mine.supp||[]).includes("other"));
+  $("#parSuppOther").value=mine.suppOther||"";
+  $("#parNotes").value=mine.notes||"";
+  if(c.play){
+    $("#parActivityFromChild").classList.remove("hide");
+    $("#parActivityFromChild").textContent="Child already logged activity: "+(PLAY_LABEL[c.play]||c.play);
+    $("#parActivity").classList.add("hide");
+  } else {
+    $("#parActivityFromChild").classList.add("hide");
+    $("#parActivity").classList.remove("hide");
+    setSingle("#parActivity",mine.activity);
+  }
+  renderOtherParent(s);
   renderSpotify();
 }
 
-function renderOtherParent(date){
-  const box=$("#otherParent"); if(!box) return;
-  const other = DEV.me==="Mother" ? "Father" : "Mother";
-  const e = DB.entries[date] || {};
-  const o = e.parentByAuthor && e.parentByAuthor[other];
-  if(!o){ box.innerHTML = '<small class="muted">No entry from '+other+' for this day yet.</small>'; return; }
+function renderOtherParent(s){
+  const box=$("#otherParent"); const other=DEV.me==="Mother"?"Father":"Mother";
+  const o=s.parentByAuthor[other];
+  if(!o){ box.innerHTML='<small class="muted">No '+curTime+' entry from '+other+' yet.</small>'; return; }
   const chips=[];
   if(o.pain!=null) chips.push("Pain "+o.pain);
   if(o.bristol!=null) chips.push("Bristol "+o.bristol);
   if(o.sugar) chips.push("Sugar: "+o.sugar);
-  if(o.probiotic) chips.push("Probiotic: "+o.probiotic);
-  box.innerHTML = '<div class="insight"><strong>'+other+"'s entry</strong> "
+  if((o.probiotic||[]).length) chips.push("Probiotic: "+o.probiotic.join("/"));
+  box.innerHTML='<div class="insight"><strong>'+other+"'s "+curTime+" entry</strong> "
     + chips.map(c=>'<span class="entry-chip">'+c+'</span>').join("")
-    + (o.notes? '<div style="margin-top:6px;font-size:.85rem">"'+o.notes.replace(/</g,"&lt;")+'"</div>':'') + '</div>';
+    + (o.notes?'<div style="margin-top:6px;font-size:.85rem">"'+o.notes.replace(/</g,"&lt;")+'"</div>':'')+'</div>';
 }
 
-/* ---------- saving ---------- */
+/* ---------- save ---------- */
 async function putEntry(section, payload){
   const date=$("#theDate").value;
-  const r = await api("/entry",{ method:"PUT", body:{ date, section, author:DEV.me, payload } });
+  const existing = slotOf(date,curTime,false);
+  const mineExists = existing && (section==="child" ? existing.child : existing.parentByAuthor[DEV.me]);
+  if(mineExists && !confirm(curTime[0].toUpperCase()+curTime.slice(1)+" "+section+" entry already exists for this day. Overwrite it?")) return false;
+  const r=await api("/entry",{method:"PUT",body:{date,time:curTime,section,author:DEV.me,payload}});
   if(!r.ok) throw new Error("save failed ("+r.status+")");
-  // update mirror
-  DB.entries[date]=DB.entries[date]||{child:null,parentByAuthor:{}};
-  payload._at=new Date().toISOString();
-  if(section==="child"){ payload._by=DEV.me; DB.entries[date].child=payload; }
-  else { DB.entries[date].parentByAuthor[DEV.me]=payload; }
-  DB.entries[date].parent=mergeParent(DB.entries[date].parentByAuthor);
+  const s=slotOf(date,curTime,true); payload._at=new Date().toISOString();
+  if(section==="child"){ payload._by=DEV.me; s.child=payload; } else { s.parentByAuthor[DEV.me]=payload; }
+  s.parent=mergeParent(s.parentByAuthor);
+  return true;
 }
 
-$("#kidSave").addEventListener("click",async()=>{
+async function saveChild(silent){
+  const ok=await putEntry("child",{ pain:+$("#kidPain").value, where:getMulti("#kidWhere"),
+    mood:getSingle("#kidMood"), drink:getSingle("#kidDrink"), eat:getSingle("#kidEat"), play:getSingle("#kidPlay") });
+  if(ok){ if(!silent) flash("Saved! 🎉"); updateHeader(); loadSlot(); }
+  return ok;
+}
+$("#toParent").addEventListener("click",async()=>{
   try{
-    await putEntry("child",{ pain:+$("#kidPain").value, where:getMulti("#kidWhere"),
-      mood:getSingle("#kidMood"), drink:getSingle("#kidDrink"), eat:getSingle("#kidEat"), play:getSingle("#kidPlay") });
-    flash("Saved! 🎉"); updateHeader();
+    const any = +$("#kidPain").value>0 || getMulti("#kidWhere").length || getSingle("#kidMood") || getSingle("#kidDrink") || getSingle("#kidEat") || getSingle("#kidPlay");
+    if(any) await saveChild(true);
   }catch(e){ flash("⚠ "+e.message); }
+  gotoPage("parent");
 });
 
-$("#parSave").addEventListener("click",async()=>{
-  try{
-    await putEntry("parent",{ pain:+$("#parPain").value, painTime:getSingle("#parPainTime"),
-      bristol:getSingle("#parBristol"), color:getSingle("#parColor"), smell:getSingle("#parSmell"),
-      soil:getSingle("#parSoil"), sugar:getSingle("#parSugar"), activity:getSingle("#parActivity"),
-      probiotic:getSingle("#parProbiotic"), supp:getSingle("#parSupp"), sleep:getSingle("#parSleep"),
-      notes:$("#parNotes").value.trim() });
-    flash("Saved as "+DEV.me+" ✓"); updateHeader(); renderOtherParent($("#theDate").value);
-  }catch(e){ flash("⚠ "+e.message); }
-});
+async function saveParent(){
+  const ok=await putEntry("parent",{
+    pain:+$("#parPain").value, painTime:getSingle("#parPainTime"),
+    bristol:getSingle("#parBristol"), color:getSingle("#parColor"), smell:getSingle("#parSmell"),
+    soil:getSingle("#parSoil"), activity:$("#parActivity").classList.contains("hide")?null:getSingle("#parActivity"),
+    morningUnderwear: curTime==="morning" ? getSingle("#parUW") : null,
+    sugar:getSingle("#parSugar"), probiotic:getMulti("#parProbiotic"),
+    antibiotic:getSingle("#parAntibiotic"), antibioticType:getSingle("#parAntibioticType"), antibioticOther:$("#parAntibioticOther").value.trim(),
+    supp:getMulti("#parSupp"), suppOther:$("#parSuppOther").value.trim(),
+    sleep:getSingle("#parSleep"), notes:$("#parNotes").value.trim() });
+  if(ok){ flash("Saved as "+DEV.me+" ✓"); updateHeader(); }
+  return ok;
+}
+$("#doneToday").addEventListener("click",async()=>{ try{ if(await saveParent()!==false) showDone(); }catch(e){ flash("⚠ "+e.message); } });
+$("#toLabs").addEventListener("click",async()=>{ try{ await saveParent(); }catch(e){ flash("⚠ "+e.message); } gotoPage("labs"); });
+$("#labsDone").addEventListener("click",showDone);
 
 /* ---------- labs ---------- */
 $("#labSave").addEventListener("click",async()=>{
   const t=$("#labText").value.trim(), c=$("#labCalpro").value.trim();
   if(!t && !c){ flash("Add a result first"); return; }
-  try{
-    const r=await api("/lab",{ method:"POST", body:{ date:$("#labDate").value, calpro:c, text:t, author:DEV.me } });
-    const lab=await r.json();
-    DB.labs.unshift(lab); DB.labs.sort((a,b)=>(b.date||"").localeCompare(a.date||""));
+  try{ const r=await api("/lab",{method:"POST",body:{date:$("#labDate").value,calpro:c,text:t,author:DEV.me}});
+    const lab=await r.json(); DB.labs.unshift(lab); DB.labs.sort((a,b)=>(b.date||"").localeCompare(a.date||""));
     $("#labText").value=""; $("#labCalpro").value=""; renderLabs(); flash("Result saved ✓");
   }catch(e){ flash("⚠ "+e.message); }
 });
 function renderLabs(){
   const box=$("#labList");
   if(!DB.labs.length){ box.innerHTML='<small class="muted">No results yet.</small>'; return; }
-  box.innerHTML = DB.labs.map(l=>`
-    <div class="card tight" style="margin:8px 0">
-      <div class="spread"><strong>${l.date||"—"}</strong>
-        <button class="btn ghost small" data-del="${l.id}">Delete</button></div>
-      <small class="muted">Added by ${l.author||"—"}</small>
-      ${l.calpro?`<div class="entry-chip" style="margin-top:6px">Calprotectin: ${l.calpro} µg/g</div>`:""}
-      ${l.text?`<p style="margin:.5em 0 0;font-size:.9rem">${(l.text||"").replace(/</g,"&lt;")}</p>`:""}
-    </div>`).join("");
+  box.innerHTML=DB.labs.map(l=>`<div class="card tight" style="margin:8px 0">
+    <div class="spread"><strong>${l.date||"—"}</strong><button class="btn ghost small" data-del="${l.id}">Delete</button></div>
+    <small class="muted">Added by ${l.author||"—"}</small>
+    ${l.calpro?`<div class="entry-chip" style="margin-top:6px">Calprotectin: ${l.calpro} µg/g</div>`:""}
+    ${l.text?`<p style="margin:.5em 0 0;font-size:.9rem">${(l.text||"").replace(/</g,"&lt;")}</p>`:""}</div>`).join("");
   $$("#labList [data-del]").forEach(b=>b.addEventListener("click",async()=>{
     try{ await api("/lab?id="+encodeURIComponent(b.dataset.del),{method:"DELETE"});
       DB.labs=DB.labs.filter(x=>x.id!=b.dataset.del); renderLabs(); }catch(e){ flash("⚠ "+e.message); }
   }));
 }
 
-/* ---------- spotify ---------- */
-$("#spotifySave").addEventListener("click",async()=>{
-  DB.spotify=$("#spotifyUrl").value.trim();
-  try{ await api("/meta",{method:"PUT",body:{spotify:DB.spotify}}); renderSpotify(); flash("Song saved 🎵"); }
-  catch(e){ flash("⚠ "+e.message); }
-});
+/* ---------- spotify / switch / export / reset ---------- */
+$("#spotifySave").addEventListener("click",async()=>{ DB.spotify=$("#spotifyUrl").value.trim();
+  try{ await api("/meta",{method:"PUT",body:{spotify:DB.spotify}}); renderSpotify(); flash("Song saved 🎵"); }catch(e){ flash("⚠ "+e.message); } });
 function renderSpotify(){
-  let host=$("#kidSpotify");
-  if(!DB.spotify){ if(host) host.remove(); return; }
+  let host=$("#kidSpotify"); if(!DB.spotify){ if(host) host.remove(); return; }
   const m=DB.spotify.match(/track\/([A-Za-z0-9]+)/); if(!m) return;
   if(!host){ host=document.createElement("div"); host.id="kidSpotify"; host.style.margin="8px 0 4px";
-    const anchor=$("#page-child .kidwrap .eyebrow"); if(anchor) anchor.after(host); }
+    const a=$("#page-child .kidwrap .eyebrow"); if(a) a.after(host); }
   host.innerHTML=`<iframe style="border-radius:12px" src="https://open.spotify.com/embed/track/${m[1]}" width="100%" height="80" frameborder="0" allow="encrypted-media"></iframe>`;
 }
-
-/* ---------- switch user ---------- */
-$("#switchSave").addEventListener("click",()=>{
-  const v=getSingle("#switchWho"); if(!v){ flash("Pick one"); return; }
-  DEV.me=v; saveDev(); paintIdentity(); loadDay($("#theDate").value); flash("Now: "+v);
-});
-
-/* ---------- export ---------- */
-$("#exportBtn").addEventListener("click",()=>{
-  const blob=new Blob([JSON.stringify(DB,null,2)],{type:"application/json"});
-  const a=document.createElement("a"); a.href=URL.createObjectURL(blob);
-  a.download="gut-joint-journal-"+todayStr()+".json"; a.click();
-});
-
-/* ---------- reset (erases the shared family database) ---------- */
-$("#resetBtn").addEventListener("click",async()=>{
-  if($("#resetCode").value!==RESET_CODE){ flash("Wrong code"); return; }
-  if(!confirm("Erase the ENTIRE family database for everyone, and sign this device out? This cannot be undone.")) return;
+$("#switchSave").addEventListener("click",()=>{ const v=getSingle("#switchWho"); if(!v){ flash("Pick one"); return; }
+  DEV.me=v; saveDev(); paintIdentity(); loadSlot(); flash("Now: "+v); });
+$("#exportBtn").addEventListener("click",()=>{ const blob=new Blob([JSON.stringify(DB,null,2)],{type:"application/json"});
+  const a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download="gut-joint-journal-"+todayStr()+".json"; a.click(); });
+$("#resetBtn").addEventListener("click",async()=>{ if($("#resetCode").value!==RESET_CODE){ flash("Wrong code"); return; }
+  if(!confirm("Erase the ENTIRE family database for everyone, and sign this device out?")) return;
   try{ await api("/reset",{method:"POST",body:{code:RESET_CODE}}); }catch(e){}
-  localStorage.removeItem(DEVKEY); location.reload();
-});
+  localStorage.removeItem(DEVKEY); location.reload(); });
 
-/* ---------- AI analysis (through the family Worker) ---------- */
+/* ---------- AI ---------- */
 let aiRange=30;
-$$("#aiRangeSeg button").forEach(b=>b.addEventListener("click",()=>{
-  $$("#aiRangeSeg button").forEach(x=>x.classList.remove("active")); b.classList.add("active"); aiRange=+b.dataset.r;
-}));
+$$("#aiRangeSeg button").forEach(b=>b.addEventListener("click",()=>{ $$("#aiRangeSeg button").forEach(x=>x.classList.remove("active")); b.classList.add("active"); aiRange=+b.dataset.r; }));
 $("#aiBtn").addEventListener("click",async()=>{
-  const out=$("#aiOut");
-  const rows=entriesInRange(aiRange);
-  if(rows.length<3){ out.innerHTML='<div class="banner note"><span>📉</span><div>Only '+rows.length+' day(s) logged in this range — log a couple more before analysing.</div></div>'; return; }
+  const out=$("#aiOut"); const rows=entriesInRange(aiRange);
+  if(rows.length<3){ out.innerHTML='<div class="banner note"><span>📉</span><div>Only '+rows.length+' entr(y/ies) in range — log a few more.</div></div>'; return; }
   const payload=JSON.stringify({ childCode:DB.childCode||"child", startDate:DB.startDate, rangeDays:aiRange, entries:rows, labs:DB.labs });
   const btn=$("#aiBtn"), orig=btn.textContent; btn.disabled=true; btn.textContent="Analysing…";
-  out.innerHTML='<div class="insight">Sending this period to Claude…</div>';
-  try{
-    const r=await api("/ai",{ method:"POST", body:{ data:payload } });
-    const j=await r.json();
-    if(!r.ok || j.error){ out.innerHTML='<div class="banner note"><span>⚠️</span><div>Error: '+((j&&(j.detail||j.error))||r.status)+'</div></div>'; }
+  out.innerHTML='<div class="insight">Sending to Claude…</div>';
+  try{ const r=await api("/ai",{method:"POST",body:{data:payload}}); const j=await r.json();
+    if(!r.ok||j.error){ out.innerHTML='<div class="banner note"><span>⚠️</span><div>Error: '+((j&&(j.detail||j.error))||r.status)+'</div></div>'; }
     else { const txt=(j.analysis||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/\n/g,"<br>");
-      out.innerHTML='<div class="card tight"><div class="eyebrow">AI review · last '+aiRange+' days</div><p style="font-size:.92rem;line-height:1.6">'+txt+'</p><small class="muted">Generated from your data. Not medical advice — discuss with your doctor.</small></div>'; }
+      out.innerHTML='<div class="card tight"><div class="eyebrow">AI review · last '+aiRange+' days</div><p style="font-size:.92rem;line-height:1.6">'+txt+'</p><small class="muted">Not medical advice — discuss with your doctor.</small></div>'; }
   }catch(e){ out.innerHTML='<div class="banner note"><span>📡</span><div>Could not reach the database ('+e.message+').</div></div>'; }
   finally{ btn.disabled=false; btn.textContent=orig; }
 });
 
-/* ---------- stats / insights ---------- */
+/* ---------- stats ---------- */
 let currentRange=30;
-$$("#rangeSeg button").forEach(b=>b.addEventListener("click",()=>{
-  $$("#rangeSeg button").forEach(x=>x.classList.remove("active")); b.classList.add("active");
-  currentRange=+b.dataset.r; renderStats(currentRange);
-}));
+$$("#rangeSeg button").forEach(b=>b.addEventListener("click",()=>{ $$("#rangeSeg button").forEach(x=>x.classList.remove("active")); b.classList.add("active"); currentRange=+b.dataset.r; renderStats(currentRange); }));
+const num=v=>(v===null||v===undefined||v==="")?null:+v;
 function entriesInRange(days){
-  const cut=new Date(); cut.setDate(cut.getDate()-days);
-  return Object.entries(DB.entries).filter(([d])=>new Date(d)>=cut)
-    .map(([d,v])=>Object.assign({date:d}, v)).sort((a,b)=>a.date.localeCompare(b.date));
+  const cut=new Date(); cut.setDate(cut.getDate()-days); const rows=[];
+  Object.entries(DB.entries).forEach(([date,day])=>{ if(new Date(date)<cut) return;
+    SLOTS.forEach(t=>{ const s=day[t]; if(s) rows.push(Object.assign({date,time:t}, s)); }); });
+  return rows.sort((a,b)=>a.date.localeCompare(b.date) || SLOTS.indexOf(a.time)-SLOTS.indexOf(b.time));
 }
-const num = v => (v===null||v===undefined||v==="")?null:+v;
+const painOf = r => { const p=r.parent&&num(r.parent.pain); if(p!=null) return p; const c=r.child&&num(r.child.pain); return c; };
+const actOf  = r => (r.parent&&r.parent.activity) || (r.child&&r.child.play) || null;
+function bar(label,val,max){ return `<div class="bar-row"><span class="lab">${label}</span><div class="bar-track"><div class="bar-fill" style="width:${Math.max(0,val/max*100)}%"></div></div><span>${val.toFixed(1)}</span></div>`; }
 
 function renderStats(days){
   $("#rangeNote").textContent="Last "+days+" days";
   const rows=entriesInRange(days);
-  const withPain=rows.filter(r=>r.parent && num(r.parent.pain)!==null);
-  const pains=withPain.map(r=>num(r.parent.pain));
-  const avg=pains.length?(pains.reduce((a,b)=>a+b,0)/pains.length):null;
-  const painDays=pains.filter(p=>p>=3).length;
-  const hardGut=rows.filter(r=>{const b=r.parent&&r.parent.bristol;return b==="0"||b==="6"||b==="7";}).length;
+  const withPain=rows.filter(r=>painOf(r)!=null);
+  const pains=withPain.map(painOf);
+  const avg=pains.length?pains.reduce((a,b)=>a+b,0)/pains.length:null;
   $("#sDays").textContent=rows.length;
   $("#sAvgPain").textContent=avg===null?"–":avg.toFixed(1);
-  $("#sPainDays").textContent=painDays;
-  $("#sHardGut").textContent=hardGut;
+  $("#sPainDays").textContent=pains.filter(p=>p>=3).length;
+  $("#sHardGut").textContent=rows.filter(r=>{const b=r.parent&&r.parent.bristol;return b==="0"||b==="6"||b==="7";}).length;
 
-  const buckets={none:[],some:[],lots:[]};
-  rows.forEach(r=>{const s=r.parent&&r.parent.sugar;const p=r.parent&&num(r.parent.pain);if(s&&p!==null&&buckets[s])buckets[s].push(p);});
-  const labelMap={none:"No sugar",some:"Some",lots:"A lot"};
+  const byTime={morning:[],afternoon:[],evening:[]};
+  withPain.forEach(r=>byTime[r.time]&&byTime[r.time].push(painOf(r)));
+  const tl={morning:"🌅 Morning",afternoon:"☀️ Afternoon",evening:"🌙 Evening"};
+  const anyT=SLOTS.some(t=>byTime[t].length);
+  $("#timeBars").innerHTML=!anyT?'<small class="muted">Not enough data yet.</small>':
+    SLOTS.map(t=>{ if(!byTime[t].length) return ""; const m=byTime[t].reduce((a,b)=>a+b,0)/byTime[t].length; return bar(tl[t],m,10); }).join("");
+
+  const buckets={none:[],alittle:[],some:[],quite:[],lots:[]};
+  rows.forEach(r=>{ const s=r.parent&&r.parent.sugar, p=painOf(r); if(s&&p!=null&&buckets[s])buckets[s].push(p); });
+  const sl={none:"No sugar",alittle:"A little",some:"Some",quite:"Quite a bit",lots:"A lot"};
   const anyS=Object.values(buckets).some(a=>a.length);
   $("#sugarBars").innerHTML=!anyS?'<small class="muted">Not enough data yet.</small>':
-    ["none","some","lots"].map(k=>{ if(!buckets[k].length)return"";
-      const m=buckets[k].reduce((a,b)=>a+b,0)/buckets[k].length;
-      return `<div class="bar-row"><span class="lab">${labelMap[k]}</span><div class="bar-track"><div class="bar-fill" style="width:${m/10*100}%"></div></div><span>${m.toFixed(1)}</span></div>`;
-    }).join("");
+    Object.keys(buckets).map(k=>{ if(!buckets[k].length)return""; const m=buckets[k].reduce((a,b)=>a+b,0)/buckets[k].length; return bar(sl[k],m,10); }).join("");
 
-  const overlap=rows.filter(r=>{const p=r.parent;if(!p)return false;
-    const hard=p.bristol==="0"||p.bristol==="6"||p.bristol==="7"||p.soil==="moderate"||p.soil==="heavy";
-    return hard&&num(p.pain)>=3;});
+  const overlap=rows.filter(r=>{ const p=r.parent; if(!p)return false;
+    const hard=p.bristol==="0"||p.bristol==="6"||p.bristol==="7"||p.soil==="moderate"||p.soil==="heavy"; return hard&&painOf(r)>=3; });
   $("#overlapBox").innerHTML=!rows.length?'<small class="muted">—</small>':
-    `<div class="insight ${overlap.length?'warn':'good'}">On <strong>${overlap.length}</strong> of ${rows.length} logged days, a harder gut day and a joint-pain day (≥3) happened together${overlap.length?": "+overlap.slice(-6).map(r=>r.date.slice(5)).join(", "):"."}.</div><small class="muted">Same-day overlap is a clue, not proof — keep logging.</small>`;
+    `<div class="insight ${overlap.length?'warn':'good'}">On <strong>${overlap.length}</strong> of ${rows.length} entries, a harder gut reading and joint pain (≥3) occurred together${overlap.length?": "+overlap.slice(-6).map(r=>r.date.slice(5)+" "+r.time[0]).join(", "):"."}.</div><small class="muted">Same-time overlap is a clue, not proof.</small>`;
 
   const ins=[];
-  function corrMean(fn){const a=rows.filter(fn).map(r=>num(r.parent.pain)).filter(p=>p!==null);return a.length?{n:a.length,m:a.reduce((x,y)=>x+y,0)/a.length}:null;}
-  if(buckets.lots.length>=2&&buckets.none.length>=2){
-    const hi=buckets.lots.reduce((a,b)=>a+b,0)/buckets.lots.length, lo=buckets.none.reduce((a,b)=>a+b,0)/buckets.none.length;
-    if(hi-lo>=1.5) ins.push({t:`High-sugar days average <strong>${hi.toFixed(1)}</strong> pain vs <strong>${lo.toFixed(1)}</strong> on no-sugar days.`,c:"warn"});
-  }
-  const proY=corrMean(r=>r.parent&&r.parent.probiotic==="yes"), proN=corrMean(r=>r.parent&&r.parent.probiotic==="no");
-  if(proY&&proN&&proY.n>=3&&proN.n>=3&&proN.m-proY.m>=1.2) ins.push({t:`Pain tends lower on probiotic days (<strong>${proY.m.toFixed(1)}</strong>) than missed (<strong>${proN.m.toFixed(1)}</strong>).`,c:"good"});
+  function cm(fn){ const a=rows.filter(fn).map(painOf).filter(p=>p!=null); return a.length?{n:a.length,m:a.reduce((x,y)=>x+y,0)/a.length}:null; }
+  if(buckets.lots.length>=2&&buckets.none.length>=2){ const hi=buckets.lots.reduce((a,b)=>a+b,0)/buckets.lots.length, lo=buckets.none.reduce((a,b)=>a+b,0)/buckets.none.length;
+    if(hi-lo>=1.5) ins.push({t:`High-sugar entries average <strong>${hi.toFixed(1)}</strong> pain vs <strong>${lo.toFixed(1)}</strong> with no sugar.`,c:"warn"}); }
+  const proY=cm(r=>r.parent&&(r.parent.probiotic||[]).some(x=>x!=="no")), proN=cm(r=>r.parent&&(r.parent.probiotic||[]).includes("no"));
+  if(proY&&proN&&proY.n>=3&&proN.n>=3&&proN.m-proY.m>=1.2) ins.push({t:`Pain tends lower on probiotic entries (<strong>${proY.m.toFixed(1)}</strong>) than without (<strong>${proN.m.toFixed(1)}</strong>).`,c:"good"});
+  const tmeans=SLOTS.filter(t=>byTime[t].length).map(t=>({t,m:byTime[t].reduce((a,b)=>a+b,0)/byTime[t].length}));
+  if(tmeans.length>=2){ tmeans.sort((a,b)=>b.m-a.m); if(tmeans[0].m-tmeans[tmeans.length-1].m>=1.5) ins.push({t:`Pain is highest in the <strong>${tmeans[0].t}</strong> (${tmeans[0].m.toFixed(1)}) and lowest in the <strong>${tmeans[tmeans.length-1].t}</strong> (${tmeans[tmeans.length-1].m.toFixed(1)}).`,c:""}); }
   const nights=rows.filter(r=>r.parent&&r.parent.painTime==="night").length;
-  if(nights>=3) ins.push({t:`Pain was night-time on <strong>${nights}</strong> days — also typical of benign childhood limb pains; mention to the doctor either way.`,c:""});
-  const actH=corrMean(r=>r.parent&&r.parent.activity==="heavy");
-  if(actH&&actH.n>=3&&avg!==null&&actH.m-avg>=1.5) ins.push({t:`Heavy-activity days run higher on pain (<strong>${actH.m.toFixed(1)}</strong> vs ${avg.toFixed(1)}) — activity may be its own trigger.`,c:""});
-  if(rows.length<5) ins.push({t:`Only ${rows.length} day(s) logged. Patterns get trustworthy after ~2–3 weeks.`,c:""});
-  $("#insights").innerHTML=ins.length?ins.map(i=>`<div class="insight ${i.c}">${i.t}</div>`).join(""):'<small class="muted">No strong patterns yet — keep logging.</small>';
+  if(nights>=3) ins.push({t:`Pain was night-time on <strong>${nights}</strong> entries — also typical of benign childhood limb pains; mention to the doctor.`,c:""});
+  const actH=cm(r=>{const a=actOf(r);return a==="heavy"||a==="intense";});
+  if(actH&&actH.n>=3&&avg!=null&&actH.m-avg>=1.5) ins.push({t:`Heavy/intense-activity entries run higher on pain (<strong>${actH.m.toFixed(1)}</strong> vs ${avg.toFixed(1)}).`,c:""});
+  if(rows.length<5) ins.push({t:`Only ${rows.length} entr(y/ies) so far. Patterns get trustworthy after ~2–3 weeks.`,c:""});
+  $("#insights").innerHTML=ins.length?ins.map(i=>`<div class="insight ${i.c}">${i.t}</div>`).join(""):'<small class="muted">No strong patterns yet.</small>';
 
   const an=[];
-  if(pains.length>=5){
-    const mean=avg, sd=Math.sqrt(pains.reduce((a,b)=>a+(b-mean)**2,0)/pains.length)||1;
-    withPain.forEach(r=>{const p=num(r.parent.pain);const z=(p-mean)/sd;
-      if(z>=1.5) an.push({d:r.date,t:`High pain (${p}) — above the ${mean.toFixed(1)} average.`});
-      const goodGut=r.parent.bristol==="4"||r.parent.bristol==="3";
-      if(p>=4&&goodGut&&r.parent.sugar==="none") an.push({d:r.date,t:`Pain ${p} on a calm-gut, no-sugar day — breaks the pattern; check sleep/activity/weather.`});
-      if(p<=1&&(r.parent.bristol==="7"||r.parent.bristol==="0")) an.push({d:r.date,t:`Rough gut but little pain (${p}) — a useful exception.`});
-    });
-  }
+  if(pains.length>=5){ const mean=avg, sd=Math.sqrt(pains.reduce((a,b)=>a+(b-mean)**2,0)/pains.length)||1;
+    withPain.forEach(r=>{ const p=painOf(r), z=(p-mean)/sd; const tag=r.date.slice(5)+" "+r.time;
+      if(z>=1.5) an.push({d:tag,t:`High pain (${p}) — above the ${mean.toFixed(1)} average.`});
+      const goodGut=r.parent&&(r.parent.bristol==="4"||r.parent.bristol==="3");
+      if(p>=4&&goodGut&&r.parent&&r.parent.sugar==="none") an.push({d:tag,t:`Pain ${p} on a calm-gut, no-sugar entry — breaks the pattern.`});
+      if(p<=1&&r.parent&&(r.parent.bristol==="7"||r.parent.bristol==="0")) an.push({d:tag,t:`Rough gut but little pain (${p}) — a useful exception.`});
+    }); }
   const seen=new Set(); const anU=an.filter(a=>{const k=a.d+a.t;if(seen.has(k))return false;seen.add(k);return true;}).slice(-8);
-  $("#anomalies").innerHTML=anU.length?anU.map(a=>`<div class="insight bad"><strong>${a.d.slice(5)}</strong> — ${a.t}</div>`).join(""):'<small class="muted">No anomaly days flagged yet.</small>';
+  $("#anomalies").innerHTML=anU.length?anU.map(a=>`<div class="insight bad"><strong>${a.d}</strong> — ${a.t}</div>`).join(""):'<small class="muted">No anomalies flagged yet.</small>';
+
+  renderConnections(rows);
+}
+
+/* ---------- cross-field correlation engine ---------- */
+// numeric extractors (higher = more/worse); return null when unknown
+const SUGAR_N={none:0,alittle:1,some:2,quite:3,lots:4};
+const SOIL_N={none:0,smudge:1,noticeable:2,moderate:3,heavy:4};
+const ACT_N={rest:0,light:1,moderate:2,heavy:3,intense:4,lots:3};
+const SLEEP_N={good:0,prettygood:1,ok:2,poor:3,verypoor:4};
+const GUT_N={"4":0,"3":1,"5":1,"2":2,"6":2,"1":3,"7":3,"0":3};
+function pget(r,k){ return r.parent ? r.parent[k] : null; }
+const vPain=r=>painOf(r);
+const vSugar=r=>{const x=pget(r,"sugar");return x in SUGAR_N?SUGAR_N[x]:null;};
+const vSoil=r=>{const x=pget(r,"soil");return x in SOIL_N?SOIL_N[x]:null;};
+const vGut=r=>{const x=pget(r,"bristol");return x in GUT_N?GUT_N[x]:null;};
+const vAct=r=>{const x=actOf(r);return x in ACT_N?ACT_N[x]:null;};
+const vSleep=r=>{const x=pget(r,"sleep");return x in SLEEP_N?SLEEP_N[x]:null;};
+const vUW=r=>{ if(r.time!=="morning")return null; const x=pget(r,"morningUnderwear"); return (x===null||x===undefined||x==="")?null:+x; };
+const vProb=r=>{ const p=pget(r,"probiotic"); if(!p||!p.length)return null; return p.includes("no")?0:1; };
+
+function pearson(pairs){
+  const n=pairs.length; if(n<5) return null;
+  let sx=0,sy=0,sxx=0,syy=0,sxy=0;
+  pairs.forEach(([x,y])=>{sx+=x;sy+=y;sxx+=x*x;syy+=y*y;sxy+=x*y;});
+  const cov=sxy-sx*sy/n, vx=sxx-sx*sx/n, vy=syy-sy*sy/n;
+  if(vx<=0||vy<=0) return null;
+  return {r:cov/Math.sqrt(vx*vy), n};
+}
+function pairUp(rows,fa,fb){ const out=[]; rows.forEach(r=>{const a=fa(r),b=fb(r); if(a!=null&&b!=null) out.push([a,b]);}); return out; }
+function strength(r){ const a=Math.abs(r); return a>=0.7?"a strong":a>=0.5?"a moderate":a>=0.3?"a slight":null; }
+
+function renderConnections(rows){
+  // same-slot pairs: [extractorA, extractorB, nameA-more, nameB]
+  const tests=[
+    [vPain,vSugar,"more pain","more sugar"],
+    [vPain,vGut,"more pain","more gut upset"],
+    [vPain,vSoil,"more pain","more soiling"],
+    [vPain,vAct,"more pain","more activity"],
+    [vPain,vSleep,"more pain","worse sleep"],
+    [vSoil,vSugar,"more soiling","more sugar"],
+    [vGut,vSugar,"more gut upset","more sugar"],
+    [vUW,vSleep,"worse morning underwear","worse sleep that night"],
+  ];
+  const found=[];
+  tests.forEach(([fa,fb,la,lb])=>{ const c=pearson(pairUp(rows,fa,fb)); if(!c) return;
+    const s=strength(c.r); if(!s) return;
+    const dir = c.r>0 ? (la+" tends to go with "+lb) : (la+" tends to go with the opposite of "+lb);
+    found.push({r:Math.abs(c.r), t:`${s} link: ${dir} (n=${c.n}).`}); });
+
+  // lag: previous evening sugar -> next morning underwear; previous-day soiling -> next morning underwear
+  const byDate={}; rows.forEach(r=>{ byDate[r.date]=byDate[r.date]||{}; byDate[r.date][r.time]=r; });
+  const dates=Object.keys(byDate).sort();
+  const lagSugarUW=[], lagSoilUW=[], lagSugarPain=[];
+  for(let i=1;i<dates.length;i++){
+    const prev=byDate[dates[i-1]], cur=byDate[dates[i]];
+    const prevMs=(new Date(dates[i])-new Date(dates[i-1]))/86400000; if(prevMs>1.5) continue; // consecutive days only
+    const eveSugar = prev.evening && vSugar(prev.evening);
+    const mornUW = cur.morning && vUW(cur.morning);
+    if(eveSugar!=null && mornUW!=null) lagSugarUW.push([eveSugar,mornUW]);
+    // any soiling the previous day (max across slots)
+    const prevSoil=Math.max(...SLOTS.map(t=>prev[t]?(vSoil(prev[t])??-1):-1));
+    if(prevSoil>=0 && mornUW!=null) lagSoilUW.push([prevSoil,mornUW]);
+    const eveSugar2=prev.evening&&vSugar(prev.evening);
+    const mornPain=cur.morning&&vPain(cur.morning);
+    if(eveSugar2!=null&&mornPain!=null) lagSugarPain.push([eveSugar2,mornPain]);
+  }
+  [[lagSugarUW,"evening sugar","more soiled the next morning"],
+   [lagSoilUW,"a soiled day","more soiled the next morning"],
+   [lagSugarPain,"evening sugar","more joint pain the next morning"]].forEach(([pairs,la,lb])=>{
+    const c=pearson(pairs); if(!c) return; const s=strength(c.r); if(!s||c.r<=0) return;
+    found.push({r:Math.abs(c.r), t:`${s} overnight link: ${la} tends to go with ${lb} (n=${c.n}).`}); });
+
+  // probiotic group comparison (already partly in insights, kept here as a connection)
+  const proPairs=pairUp(rows,vProb,vPain); const pc=pearson(proPairs);
+  if(pc){ const s=strength(pc.r); if(s){ const dir=pc.r<0?"taking probiotics tends to go with less pain":"taking probiotics tends to go with more pain";
+    found.push({r:Math.abs(pc.r), t:`${s} link: ${dir} (n=${pc.n}).`}); } }
+
+  found.sort((a,b)=>b.r-a.r);
+  const top=found.slice(0,6);
+  $("#connections").innerHTML = top.length
+    ? top.map(f=>`<div class="insight">${f.t}</div>`).join("") + '<small class="muted">Strength reflects how tightly the two move together, not certainty. Keep logging to confirm.</small>'
+    : '<small class="muted">No clear connections yet — they need ~2 weeks of entries across different conditions.</small>';
 }
 
 /* ---------- boot ---------- */
 (function boot(){
-  // prefill gate
-  setSingle("#whoami", DEV.me);
-  $("#familyToken").value = DEV.familyToken || "";
-  $("#apiBase").value = DEV.apiBase || (window.GJJ_CONFIG&&window.GJJ_CONFIG.apiBase) || "";
-  if(DEV.me && DEV.familyToken && DEV.consent && apiBase()){
-    enterApp().catch(e=>{
-      // fall back to gate if connection fails
-      $("#gateHint").textContent = "Reconnect needed: " + e.message;
-      refreshGate();
-    });
-  } else {
-    refreshGate();
-  }
+  setSingle("#whoami",DEV.me);
+  $("#familyToken").value=DEV.familyToken||"";
+  $("#apiBase").value=DEV.apiBase||(window.GJJ_CONFIG&&window.GJJ_CONFIG.apiBase)||"";
+  if(DEV.me&&DEV.familyToken&&DEV.consent&&apiBase()){
+    enterApp().catch(e=>{ $("#gateHint").textContent="Reconnect needed: "+e.message; refreshGate(); });
+  } else { refreshGate(); }
 })();
 
 </script>
