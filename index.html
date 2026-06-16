@@ -591,6 +591,10 @@
         </div>
         <button class="btn ghost small" id="switchSave" style="margin-top:6px">Save</button>
         <hr>
+        <h3>My entries</h3>
+        <p class="muted" style="margin-top:2px">Tap <strong>Open</strong> to edit, or <strong>Delete</strong> to remove. You can only change entries you logged yourself.</p>
+        <div id="myEntries"><small class="muted">No entries yet.</small></div>
+        <hr>
         <h3>Export data</h3>
         <button class="btn ghost" id="exportBtn">Export all data</button>
         <hr>
@@ -740,7 +744,7 @@ async function enterApp(){
   $("#theDate").value=todayStr(); $("#labDate").value=todayStr();
   $("#spotifyUrl").value=DB.spotify||""; setSingle("#switchWho",DEV.me);
   setTime(defaultSlotForNow());
-  paintIdentity(); updateHeader(); renderLabs(); renderStats(30);
+  paintIdentity(); updateHeader(); renderLabs(); renderStats(30); renderMyEntries();
 }
 function paintIdentity(){
   $("#userBadge").textContent=DEV.me||"—";
@@ -858,7 +862,7 @@ async function putEntry(section, payload){
 async function saveChild(silent){
   const ok=await putEntry("child",{ pain:+$("#kidPain").value, where:getMulti("#kidWhere"),
     mood:getSingle("#kidMood"), drink:getSingle("#kidDrink"), eat:getSingle("#kidEat"), play:getSingle("#kidPlay") });
-  if(ok){ if(!silent) flash("Saved! 🎉"); updateHeader(); loadSlot(); }
+  if(ok){ if(!silent) flash("Saved! 🎉"); updateHeader(); loadSlot(); renderMyEntries(); }
   return ok;
 }
 $("#toParent").addEventListener("click",async()=>{
@@ -879,7 +883,7 @@ async function saveParent(){
     antibiotic:getSingle("#parAntibiotic"), antibioticType:getSingle("#parAntibioticType"), antibioticOther:$("#parAntibioticOther").value.trim(),
     supp:getMulti("#parSupp"), suppOther:$("#parSuppOther").value.trim(),
     sleep:getSingle("#parSleep"), notes:$("#parNotes").value.trim() });
-  if(ok){ flash("Saved as "+DEV.me+" ✓"); updateHeader(); }
+  if(ok){ flash("Saved as "+DEV.me+" ✓"); updateHeader(); renderMyEntries(); }
   return ok;
 }
 $("#doneToday").addEventListener("click",async()=>{ try{ if(await saveParent()!==false) showDone(); }catch(e){ flash("⚠ "+e.message); } });
@@ -920,13 +924,53 @@ function renderSpotify(){
   host.innerHTML=`<iframe style="border-radius:12px" src="https://open.spotify.com/embed/track/${m[1]}" width="100%" height="80" frameborder="0" allow="encrypted-media"></iframe>`;
 }
 $("#switchSave").addEventListener("click",()=>{ const v=getSingle("#switchWho"); if(!v){ flash("Pick one"); return; }
-  DEV.me=v; saveDev(); paintIdentity(); loadSlot(); flash("Now: "+v); });
+  DEV.me=v; saveDev(); paintIdentity(); loadSlot(); renderMyEntries(); flash("Now: "+v); });
 $("#exportBtn").addEventListener("click",()=>{ const blob=new Blob([JSON.stringify(DB,null,2)],{type:"application/json"});
   const a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download="gut-joint-journal-"+todayStr()+".json"; a.click(); });
 $("#resetBtn").addEventListener("click",async()=>{ if($("#resetCode").value!==RESET_CODE){ flash("Wrong code"); return; }
   if(!confirm("Erase the ENTIRE family database for everyone, and sign this device out?")) return;
   try{ await api("/reset",{method:"POST",body:{code:RESET_CODE}}); }catch(e){}
   localStorage.removeItem(DEVKEY); location.reload(); });
+
+/* ---------- my entries: list / open / delete (own only) ---------- */
+function listMine(){
+  const out=[];
+  Object.keys(DB.entries).sort().reverse().forEach(date=>{
+    SLOTS.forEach(t=>{ const s=DB.entries[date][t]; if(!s) return;
+      if(s.child && s.child._by===DEV.me) out.push({date,time:t,section:"child"});
+      if(s.parentByAuthor[DEV.me]) out.push({date,time:t,section:"parent"});
+    });
+  });
+  return out;
+}
+function renderMyEntries(){
+  const box=$("#myEntries"); if(!box) return;
+  const mine=listMine();
+  if(!mine.length){ box.innerHTML='<small class="muted">No entries logged by '+(DEV.me||"you")+' yet.</small>'; return; }
+  box.innerHTML=mine.slice(0,60).map(e=>`<div class="card tight" style="margin:8px 0">
+    <div class="spread">
+      <div><strong>${e.date}</strong> · ${e.time} · ${e.section==="child"?"🧒 Child":"👪 Parent"}</div>
+    </div>
+    <div class="row" style="margin-top:8px">
+      <button class="btn ghost small" data-open='${e.date}|${e.time}|${e.section}'>Open</button>
+      <button class="btn danger small" data-del='${e.date}|${e.time}|${e.section}'>Delete</button>
+    </div></div>`).join("");
+  $$("#myEntries [data-open]").forEach(b=>b.addEventListener("click",()=>{
+    const [d,t,sec]=b.dataset.open.split("|");
+    $("#theDate").value=d; setTime(t); gotoPage(sec==="child"?"child":"parent");
+  }));
+  $$("#myEntries [data-del]").forEach(b=>b.addEventListener("click",async()=>{
+    const [d,t,sec]=b.dataset.del.split("|");
+    if(!confirm("Delete your "+t+" "+sec+" entry for "+d+"? This can't be undone.")) return;
+    try{
+      await api("/entry?date="+encodeURIComponent(d)+"&time="+encodeURIComponent(t)+"&section="+sec+"&author="+encodeURIComponent(DEV.me),{method:"DELETE"});
+      const s=slotOf(d,t,false);
+      if(s){ if(sec==="child") s.child=null; else delete s.parentByAuthor[DEV.me]; s.parent=mergeParent(s.parentByAuthor); }
+      renderMyEntries(); renderStats(currentRange); if($("#theDate").value===d) loadSlot();
+      flash("Deleted ✓");
+    }catch(e){ flash("⚠ "+e.message); }
+  }));
+}
 
 /* ---------- AI ---------- */
 let aiRange=30;
