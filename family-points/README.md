@@ -18,7 +18,18 @@ python3 -m http.server 8080     # then open http://127.0.0.1:8080
 ```
 
 Any static host works too (GitHub Pages, Cloudflare Pages, a shared tablet's
-home screen). The first visit walks a parent through a four-step setup:
+home screen).
+
+There is also a one-file build for hosts that want a single upload:
+
+```sh
+node build.js              # standalone.html — a complete page
+node build.js --artifact   # artifact.html — page content without the <html>
+                           # shell, for hosts that supply their own
+```
+
+Both are generated; `index.html` plus `assets/` and `js/` stay the source of
+truth, so rebuild after changing anything there. The first visit walks a parent through a four-step setup:
 
 1. Family name and language
 2. The first parent account (username + password)
@@ -160,8 +171,10 @@ the text being translated stays on the device.
 - Parent passwords and children's PINs are stored as salted SHA-256 hashes
   (15,000 rounds), never as plain text. This keeps a curious sibling out; it is
   not protection against someone with the device and real intent.
-- **Family → Data → Export backup** writes a JSON file. Import the same file on
-  another device (or after clearing the browser) to restore the family.
+- **Family → Data → Export backup** shows the whole family as text you can copy,
+  and offers to save it as a file. Import takes either — paste the text or pick
+  the file — so a family moves between devices even where a page is not allowed
+  to start a download.
 - Clearing the browser's site data erases the family. Export first.
 
 ## Layout

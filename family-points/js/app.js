@@ -56,7 +56,6 @@
       : global.ChildView.render(view.tab);
     U.el("#tabs").innerHTML = tabs ? tabBar(tabs) : "";
     document.body.classList.toggle("no-tabs", !tabs);
-    if (screen === "parent" && global.ParentView.afterRender) global.ParentView.afterRender();
   }
 
   function header(screen) {

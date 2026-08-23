@@ -671,8 +671,7 @@
     html += '<div class="section-title">' + esc(t("family.data")) + "</div>" +
       '<div class="card stack">' +
         '<button class="btn ghost block" data-act="p.export">⬇️ ' + esc(t("family.export")) + "</button>" +
-        '<label class="btn ghost block" style="cursor:pointer">⬆️ ' + esc(t("family.import")) +
-          '<input type="file" accept="application/json,.json" id="importFile" style="display:none"></label>' +
+        '<button class="btn ghost block" data-act="p.import">⬆️ ' + esc(t("family.import")) + "</button>" +
         '<button class="btn danger block" data-act="p.reset">🗑️ ' + esc(t("family.reset")) + "</button>" +
         '<small>' + esc(t("family.aboutText")) + "</small>" +
       "</div>";
@@ -1143,17 +1142,103 @@
     global.App.refresh();
   });
 
+  /* Some places the app runs (an embedded page, a locked-down browser) block a
+     page from starting a download, so the backup is always readable as text and
+     the file is only a bonus. */
   U.on("p.export", function () {
     var data = JSON.stringify(S.get(), null, 2);
-    var blob = new Blob([data], { type: "application/json" });
-    var a = document.createElement("a");
-    a.href = URL.createObjectURL(blob);
-    a.download = "family-points-" + S.dayKey() + ".json";
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    setTimeout(function () { URL.revokeObjectURL(a.href); }, 2000);
+    U.modal(t("family.export"),
+      '<p class="hint">' + esc(t("family.exportHint")) + "</p>" +
+      '<textarea id="exportBox" readonly style="min-height:170px;font-family:ui-monospace,monospace;font-size:.72rem">' +
+        esc(data) + "</textarea>" +
+      '<div class="row gap mt">' +
+        '<button class="btn grow" data-act="p.exportCopy">📋 ' + esc(t("family.copy")) + "</button>" +
+        '<button class="btn ghost grow" data-act="p.exportFile">⬇️ ' + esc(t("family.download")) + "</button>" +
+      "</div>",
+      function (body) {
+        var box = U.el("#exportBox", body);
+        if (box) { box.focus(); box.select(); }
+      });
   });
+  U.on("p.exportCopy", function () {
+    var box = U.el("#exportBox");
+    if (!box) return;
+    box.select();
+    box.setSelectionRange(0, box.value.length);
+    var done = false;
+    try { done = document.execCommand("copy"); } catch (e) { done = false; }
+    if (!done && global.navigator.clipboard) {
+      return global.navigator.clipboard.writeText(box.value)
+        .then(function () { U.toast(t("family.copied"), "good"); })
+        .catch(function () { U.toast(t("common.required"), "bad"); });
+    }
+    U.toast(done ? t("family.copied") : t("family.exportHint"), done ? "good" : "");
+  });
+  U.on("p.exportFile", function () {
+    saveBackupFile("family-points-" + S.dayKey() + ".json", JSON.stringify(S.get(), null, 2));
+  });
+
+  /* Saving a file works differently depending on where the app is running. On
+     an ordinary page a link does it; inside a viewer that mediates saves, the
+     viewer has to be asked and is free to say no. Either way the backup is
+     also on screen as text, so nothing is lost if a save is unavailable. */
+  function saveBackupFile(filename, data) {
+    var host = global.claude;
+    if (host && typeof host.use === "function") {
+      return host.use("downloads").then(function (downloads) {
+        if (!downloads) return U.toast(t("family.exportHint"), "");
+        return downloads.save({ filename: filename, data: data })
+          .then(function () { U.toast(t("common.saved"), "good"); })
+          .catch(function (err) {
+            if (err && err.code === "declined") return;   // the viewer said no
+            U.toast(t("family.exportHint"), "bad");
+          });
+      }).catch(function () { U.toast(t("family.exportHint"), "bad"); });
+    }
+    try {
+      var blob = new Blob([data], { type: "application/json" });
+      var a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(function () { URL.revokeObjectURL(a.href); }, 2000);
+    } catch (e) {
+      U.toast(t("family.exportHint"), "bad");
+    }
+  }
+
+  U.on("p.import", function () {
+    U.modal(t("family.import"),
+      '<p class="hint">' + esc(t("family.pasteHint")) + "</p>" +
+      '<label class="btn ghost block mb" style="cursor:pointer">📂 ' + esc(t("family.pickFile")) +
+        '<input type="file" accept="application/json,.json" id="importFile" style="display:none"></label>' +
+      '<textarea id="importBox" style="min-height:150px;font-family:ui-monospace,monospace;font-size:.72rem"></textarea>' +
+      '<button class="btn block mt" data-act="p.importText">' + esc(t("family.restore")) + "</button>",
+      function () { bindImport(); });
+  });
+  U.on("p.importText", function () {
+    var box = U.el("#importBox");
+    if (box) applyBackup(box.value);
+  });
+
+  /* One place decides whether a pasted or uploaded blob is really a backup. */
+  function applyBackup(raw) {
+    var parsed;
+    try {
+      parsed = JSON.parse(raw);
+      if (!parsed || !parsed.settings || !parsed.children || !parsed.ledger) throw new Error("bad");
+    } catch (e) {
+      return U.toast(t("family.importBad"), "bad");
+    }
+    S.replace(parsed);
+    global.App.applyUserLang();
+    U.closeModal();
+    U.toast(t("family.importOk"), "good");
+    global.App.refresh();
+  }
+
   U.on("p.reset", function () {
     U.confirmDialog(t("family.resetWarn"), function () {
       S.wipe();
@@ -1162,7 +1247,7 @@
     });
   });
 
-  /* The file input lives inside a <label>, so it is wired on every render. */
+  /* The file input lives inside a <label> in the import dialog. */
   function bindImport() {
     var input = U.el("#importFile");
     if (!input || input._bound) return;
@@ -1171,21 +1256,11 @@
       var file = input.files && input.files[0];
       if (!file) return;
       var reader = new FileReader();
-      reader.onload = function () {
-        try {
-          var parsed = JSON.parse(reader.result);
-          if (!parsed || !parsed.settings || !parsed.children) throw new Error("bad");
-          S.replace(parsed);
-          global.I18N.setLang(parsed.settings.lang || "en");
-          U.toast(t("family.importOk"), "good");
-          global.App.refresh();
-        } catch (e) {
-          U.toast(t("family.importBad"), "bad");
-        }
-      };
+      reader.onload = function () { applyBackup(reader.result); };
+      reader.onerror = function () { U.toast(t("family.importBad"), "bad"); };
       reader.readAsText(file);
     });
   }
 
-  global.ParentView = { render: render, afterRender: bindImport };
+  global.ParentView = { render: render };
 })(window);

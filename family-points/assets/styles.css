@@ -24,8 +24,12 @@
   --font: "Segoe UI", system-ui, -apple-system, "Noto Sans Hebrew", "Helvetica Neue", Arial, sans-serif;
 }
 
+/* Dark mode has three states to cover: the viewer's system preference, and an
+   explicit light or dark choice stamped on the root element by whatever hosts
+   the page. CSS cannot share one declaration block across a media query and a
+   plain selector, so the tokens are written twice — keep them in step. */
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not([data-theme="light"]) {
     --bg: #14131d;
     --surface: #1e1c2b;
     --surface-2: #262338;
@@ -42,6 +46,23 @@
     --shadow: 0 8px 28px rgba(0, 0, 0, .4);
     --shadow-sm: 0 2px 8px rgba(0, 0, 0, .3);
   }
+}
+:root[data-theme="dark"] {
+    --bg: #14131d;
+    --surface: #1e1c2b;
+    --surface-2: #262338;
+    --line: #322e47;
+    --ink: #f2f0fb;
+    --ink-soft: #a49fc0;
+    --brand: #8f76ff;
+    --brand-soft: #2c2547;
+    --good: #3fcf94;
+    --good-soft: #16352a;
+    --bad: #ff6b68;
+    --bad-soft: #3a1e20;
+    --warn: #f0b429;
+    --shadow: 0 8px 28px rgba(0, 0, 0, .4);
+    --shadow-sm: 0 2px 8px rgba(0, 0, 0, .3);
 }
 
 * { box-sizing: border-box; }
