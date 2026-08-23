@@ -4,7 +4,9 @@ Chores, points and family rewards for the kids at home — a single static web a
 with no build step, no server and no account anywhere. Everything lives in the
 browser of the device the family uses.
 
-Available in **English** (default), **Nederlands** and **עברית** (right-to-left).
+Available in **English**, **Nederlands** and **עברית** (right-to-left). Every
+account picks its own language, and what one person writes is translated into
+the language of whoever reads it.
 
 ## Running it
 
@@ -49,6 +51,36 @@ starting balance is a ledger entry, and a balance is replayed from the ledger.
 A mistaken award can be traced in the child's history instead of quietly
 drifting.
 
+## Languages and simultaneous translation
+
+Language is a personal setting, not a family-wide one: a parent can read the app
+in Dutch while a child reads the same family in Hebrew. Each account stores its
+own choice, so signing in switches the whole interface — including the
+right-to-left layout for Hebrew — to that person's language. The family default
+in settings only decides what a newly created account starts with.
+
+Free text follows the reader. A note a child types in Hebrew shows up in Dutch
+for the parent who reads Dutch, and a task a parent names in Dutch shows up in
+Hebrew for the child who reads Hebrew. This covers notes, birthday wishes,
+outing wishes, task names, custom category names and the reasons written on
+manual point adjustments. Names and film titles are left exactly as they were
+entered.
+
+- Translated text carries a 🌐 badge; tapping it shows the original words and
+  the language they were written in. Nothing is ever silently rewritten.
+- The translation runs **inside the browser**, through Chrome's on-device
+  Translator API. A child's notebook never leaves the device to be readable.
+  The browser downloads a language pack the first time a pair is used —
+  *Family → Simultaneous translation → Download the language packs* does it in
+  one go, and after that it works offline.
+- Each result is cached on the record, so a translated note renders instantly
+  ever after and is not re-translated on every visit.
+- If the browser cannot translate (anything older than Chrome 138, or a missing
+  language pair), the text is shown exactly as written and tagged with its
+  language, and settings says plainly why. Translation can also be switched off.
+- The quality is whatever the on-device model gives you — good enough to
+  understand a note, not a human translator.
+
 ## What each role sees
 
 **Parents** (username + password, full admin)
@@ -59,8 +91,9 @@ drifting.
 - Kids — a page per child: balance, manual +/− adjustments with a reason,
   wish list, outing wishes, notes, and the full points history
 - Approvals — the "I did it" reports the children send, approved or rejected
-- Family — language, group goal, week start, movie night day, parent accounts,
-  categories, backup export/import
+- Family — own language, default language for new accounts, translation,
+  group goal, week start, movie night day, parent accounts, categories,
+  backup export/import
 
 **Children** (tap their character, plus a PIN if one was set)
 
@@ -87,7 +120,9 @@ stable rather than random.
 ## Data, privacy and backups
 
 Everything is stored in `localStorage` under `familyPoints.v1` on that one
-device. Nothing is sent anywhere — there is no network call in the whole app.
+device. The app itself makes no network calls: the only thing that ever goes
+over the wire is the browser's own download of a translation language pack, and
+the text being translated stays on the device.
 
 - Parent passwords and children's PINs are stored as salted SHA-256 hashes
   (15,000 rounds), never as plain text. This keeps a curious sibling out; it is
@@ -103,7 +138,8 @@ family-points/
 ├── index.html          page shell — the screens are rendered from JS
 ├── assets/styles.css   one stylesheet: light + dark, LTR + RTL
 └── js/
-    ├── i18n.js         240 strings × en / nl / he
+    ├── i18n.js         261 interface strings × en / nl / he
+    ├── translate.js    on-device translation of what the family writes
     ├── avatars.js      emoji characters on coloured discs (no image files)
     ├── sha256.js       hashing for passwords and PINs
     ├── store.js        data model, ledger, balances, weeks, birthdays
@@ -135,4 +171,9 @@ runs straight from `file://` without a server.
   בוחר את הסרט — והבחירה מתועדת.
 - **בילוי משפחתי**: כשהקופה הקבוצתית מגיעה ליעד, הילד עם היתרה הגבוהה ביותר בוחר
   מתוך העדפות הבילוי שרשם.
-- שלוש שפות: אנגלית (ברירת מחדל), הולנדית ועברית עם פריסה מימין לשמאל.
+- **שפה אישית לכל משתמש**: כל הורה וכל ילד בוחרים את השפה שלהם, והכניסה לחשבון
+  מחליפה את כל הממשק (כולל פריסת RTL לעברית) לשפה של אותו אדם.
+- **תרגום סימולטני**: הערה שילד כותב בעברית מוצגת בהולנדית להורה שקורא הולנדית,
+  ומשימה שהורה כתב בהולנדית מוצגת בעברית לילד שקורא עברית. התרגום מתבצע בתוך
+  הדפדפן (Translator API של כרום) — הטקסט לא יוצא מהמכשיר. לצד כל טקסט מתורגם
+  יש תג 🌐 שמציג את המקור בדיוק כפי שנכתב. שמות וכותרות סרטים לא מתורגמים.

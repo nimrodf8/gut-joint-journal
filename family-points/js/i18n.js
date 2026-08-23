@@ -258,7 +258,30 @@
     "seed.homework": "Finish your homework",
     "seed.read20": "Read for 20 minutes",
     "seed.dutch15": "15 minutes of Dutch practice",
-    "seed.familyGame": "Play a game with the family"
+    "seed.familyGame": "Play a game with the family",
+
+    "lang.en": "English",
+    "lang.nl": "Dutch",
+    "lang.he": "Hebrew",
+
+    "tr.title": "Simultaneous translation",
+    "tr.hint": "Everyone picks their own language. Notes, wishes and task names written by someone else are translated into yours.",
+    "tr.privacy": "Translation runs inside this browser and the text is never sent anywhere. The first time a language is used, the browser downloads a language pack.",
+    "tr.enabled": "Translate what others write",
+    "tr.enable": "Turn on translation",
+    "tr.prepare": "Download the language packs",
+    "tr.ready": "Ready on this device",
+    "tr.working": "Preparing the language packs…",
+    "tr.unsupported": "This browser cannot translate on its own, so text stays in the language it was written in. Chrome 138 and later can.",
+    "tr.pairMissing": "This browser has no {a} → {b} translation, so that text stays as written.",
+    "tr.badge": "Translated from {lang}",
+    "tr.pending": "Translating…",
+    "tr.original": "Original",
+    "tr.showOriginal": "Show what was written",
+    "tr.yourLang": "Your language",
+    "tr.userLangHint": "Only changes what you see. Everyone else keeps their own language.",
+    "tr.defaultLang": "Language for new accounts",
+    "tr.childLang": "The child's language"
   };
 
   var NL = {
@@ -515,7 +538,30 @@
     "seed.homework": "Je huiswerk afmaken",
     "seed.read20": "20 minuten lezen",
     "seed.dutch15": "15 minuten Nederlands oefenen",
-    "seed.familyGame": "Een spel met het gezin spelen"
+    "seed.familyGame": "Een spel met het gezin spelen",
+
+    "lang.en": "Engels",
+    "lang.nl": "Nederlands",
+    "lang.he": "Hebreeuws",
+
+    "tr.title": "Gelijktijdige vertaling",
+    "tr.hint": "Iedereen kiest zijn eigen taal. Notities, wensen en taaknamen die iemand anders schrijft, worden naar de jouwe vertaald.",
+    "tr.privacy": "Het vertalen gebeurt in deze browser en de tekst gaat nergens heen. De eerste keer dat een taal wordt gebruikt, downloadt de browser een taalpakket.",
+    "tr.enabled": "Vertaal wat anderen schrijven",
+    "tr.enable": "Vertaling aanzetten",
+    "tr.prepare": "Taalpakketten downloaden",
+    "tr.ready": "Klaar op dit apparaat",
+    "tr.working": "Taalpakketten worden klaargezet…",
+    "tr.unsupported": "Deze browser kan zelf niet vertalen, dus tekst blijft staan in de taal waarin die is geschreven. Chrome 138 en nieuwer kan het wel.",
+    "tr.pairMissing": "Deze browser heeft geen vertaling {a} → {b}, dus die tekst blijft zoals hij is geschreven.",
+    "tr.badge": "Vertaald uit het {lang}",
+    "tr.pending": "Bezig met vertalen…",
+    "tr.original": "Origineel",
+    "tr.showOriginal": "Toon wat er geschreven is",
+    "tr.yourLang": "Jouw taal",
+    "tr.userLangHint": "Verandert alleen wat jij ziet. Alle anderen houden hun eigen taal.",
+    "tr.defaultLang": "Taal voor nieuwe accounts",
+    "tr.childLang": "De taal van het kind"
   };
 
   var HE = {
@@ -772,7 +818,30 @@
     "seed.homework": "לסיים שיעורי בית",
     "seed.read20": "לקרוא 20 דקות",
     "seed.dutch15": "15 דקות תרגול הולנדית",
-    "seed.familyGame": "לשחק משחק עם המשפחה"
+    "seed.familyGame": "לשחק משחק עם המשפחה",
+
+    "lang.en": "אנגלית",
+    "lang.nl": "הולנדית",
+    "lang.he": "עברית",
+
+    "tr.title": "תרגום סימולטני",
+    "tr.hint": "כל אחד בוחר את השפה שלו. הערות, רעיונות ושמות משימות שמישהו אחר כתב מתורגמים לשפה שלכם.",
+    "tr.privacy": "התרגום מתבצע בתוך הדפדפן הזה והטקסט לא נשלח לשום מקום. בפעם הראשונה שנעשה שימוש בשפה, הדפדפן מוריד חבילת שפה.",
+    "tr.enabled": "לתרגם את מה שאחרים כותבים",
+    "tr.enable": "הפעלת תרגום",
+    "tr.prepare": "הורדת חבילות השפה",
+    "tr.ready": "מוכן במכשיר הזה",
+    "tr.working": "מכינים את חבילות השפה…",
+    "tr.unsupported": "הדפדפן הזה לא יודע לתרגם בעצמו, ולכן טקסט נשאר בשפה שבה נכתב. כרום 138 ומעלה כן תומך.",
+    "tr.pairMissing": "לדפדפן הזה אין תרגום {a} ← {b}, ולכן הטקסט נשאר כפי שנכתב.",
+    "tr.badge": "תורגם מ{lang}",
+    "tr.pending": "מתרגמים…",
+    "tr.original": "המקור",
+    "tr.showOriginal": "הצגת מה שנכתב",
+    "tr.yourLang": "השפה שלך",
+    "tr.userLangHint": "משנה רק את מה שאתם רואים. לכל אחד אחר נשארת השפה שלו.",
+    "tr.defaultLang": "שפה לחשבונות חדשים",
+    "tr.childLang": "שפת הילד/ה"
   };
 
   var DICT = { en: EN, nl: NL, he: HE };

@@ -92,13 +92,54 @@
     return fmtDate(iso);
   }
 
+  /* ---- text somebody in the family typed ----
+     Two flavours of every getter: a plain one for sentences and toasts, and an
+     Html one for lists, which escapes the text and tags it as a translation so
+     the reader can always get back to the words that were actually written. */
+
+  function trValue(owner, field) {
+    return global.Translate.of(owner, field, global.I18N.lang).value;
+  }
+
+  function trHtml(owner, field) {
+    var r = global.Translate.of(owner, field, global.I18N.lang);
+    var html = esc(r.value);
+    if (r.translated) {
+      html += ' <button class="tr-badge" data-act="tr.original" data-original="' + esc(owner[field]) +
+        '" data-src="' + esc(r.source) + '" title="' +
+        esc(t("tr.badge", { lang: t("lang." + r.source) })) + '">🌐</button>';
+    } else if (r.pending) {
+      html += ' <span class="tr-badge pending" title="' + esc(t("tr.pending")) + '">⋯</span>';
+    } else if (r.source && r.source !== global.I18N.lang) {
+      html += ' <span class="tr-badge lang" title="' + esc(t("tr.pairMissing", {
+        a: t("lang." + r.source), b: t("lang." + global.I18N.lang)
+      })) + '">' + esc(r.source.toUpperCase()) + "</span>";
+    }
+    return html;
+  }
+
+  on("tr.original", function (d) {
+    modal(t("tr.original"),
+      '<p class="lead"><span class="tag">' + esc(t("lang." + d.src)) + "</span></p>" +
+      '<p style="white-space:pre-wrap">' + esc(d.original) + "</p>" +
+      '<button class="btn block mt" data-act="modal.close">' + esc(t("common.close")) + "</button>");
+  });
+
   function categoryName(cat) {
     if (!cat) return t("cat.other");
-    return cat.key ? t(cat.key) : cat.name;
+    return cat.key ? t(cat.key) : trValue(cat, "name");
+  }
+  function categoryNameHtml(cat) {
+    if (!cat) return esc(t("cat.other"));
+    return cat.key ? esc(t(cat.key)) : trHtml(cat, "name");
   }
   function taskTitle(task) {
     if (!task) return "";
-    return task.titleKey ? t(task.titleKey) : task.title;
+    return task.titleKey ? t(task.titleKey) : trValue(task, "title");
+  }
+  function taskTitleHtml(task) {
+    if (!task) return "";
+    return task.titleKey ? esc(t(task.titleKey)) : trHtml(task, "title");
   }
 
   function toast(msg, kind) {
@@ -152,7 +193,8 @@
     esc: esc, el: el, els: els, on: on, avatar: avatar, avatarPicker: avatarPicker,
     iso: iso, signed: signed,
     points: points, fmtDate: fmtDate, fmtDateTime: fmtDateTime, weekdayName: weekdayName,
-    relTime: relTime, categoryName: categoryName, taskTitle: taskTitle,
+    relTime: relTime, categoryName: categoryName, categoryNameHtml: categoryNameHtml,
+    taskTitle: taskTitle, taskTitleHtml: taskTitleHtml, trValue: trValue, trHtml: trHtml,
     toast: toast, modal: modal, closeModal: closeModal, confirmDialog: confirmDialog,
     emptyState: emptyState, progressBar: progressBar
   };

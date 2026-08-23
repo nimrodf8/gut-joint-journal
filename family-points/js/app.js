@@ -99,18 +99,37 @@
     go({ screen: "login", tab: "dashboard", params: {} });
   });
   U.on("app.lang", function () {
-    U.modal(t("common.language"),
+    var signedIn = view.screen === "parent" || view.screen === "child";
+    U.modal(signedIn ? t("tr.yourLang") : t("common.language"),
       '<div class="stack">' + global.I18N.langs.map(function (l) {
         return '<button class="btn ' + (l.code === global.I18N.lang ? "" : "ghost") +
           ' block" data-act="app.langPick" data-lang="' + l.code + '">' + l.flag + " " + esc(l.label) + "</button>";
-      }).join("") + "</div>");
+      }).join("") + "</div>" +
+      (signedIn ? '<p class="hint">' + esc(t("tr.userLangHint")) + "</p>" : ""));
   });
+  /* Language is a personal setting: it changes what this account sees and
+     leaves everyone else alone. Before anyone is signed in there is no account
+     to attach it to, so it moves the family default instead. */
   U.on("app.langPick", function (d) {
+    var s = session();
+    if ((view.screen === "parent" || view.screen === "child") && s.id) {
+      S.setUserLang(s.kind, s.id, d.lang);
+    } else if (S.exists()) {
+      S.get().settings.lang = d.lang;
+      S.save();
+    }
     global.I18N.setLang(d.lang);
-    if (S.exists()) { S.get().settings.lang = d.lang; S.save(); }
     U.closeModal();
     refresh();
   });
+
+  /* The language of whoever is signed in wins over the family default. */
+  function applyUserLang() {
+    if (!S.exists()) return;
+    var s = session();
+    var user = s.kind === "parent" ? S.parent(s.id) : s.kind === "child" ? S.child(s.id) : null;
+    global.I18N.setLang((user && user.lang) || S.get().settings.lang || guessLang());
+  }
 
   function guessLang() {
     var nav = (global.navigator.language || "en").slice(0, 2).toLowerCase();
@@ -121,12 +140,17 @@
     S.load();
     var s = S.get();
     global.I18N.setLang(s && s.settings.lang ? s.settings.lang : guessLang());
+    applyUserLang();
     view.screen = resolveScreen();
     view.tab = view.screen === "child" ? "me" : "dashboard";
     refresh();
   }
 
-  global.App = { go: go, refresh: refresh, session: session, boot: boot, get view() { return view; } };
+  global.App = {
+    go: go, refresh: refresh, session: session, boot: boot,
+    applyUserLang: applyUserLang,
+    get view() { return view; }
+  };
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", boot);
   else boot();
 })(window);

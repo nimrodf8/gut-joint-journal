@@ -179,7 +179,7 @@
     var f = draft.childForm;
     if (!f.name) { error = t("setup.errChildName"); return global.App.refresh(); }
     if (f.pin && f.pin.length !== 4) { error = t("setup.errPin"); return global.App.refresh(); }
-    draft.children.push({ name: f.name, avatar: f.avatar, birthday: f.birthday, pin: f.pin });
+    draft.children.push({ name: f.name, avatar: f.avatar, birthday: f.birthday, pin: f.pin, lang: draft.lang });
     var used = draft.children.map(function (c) { return c.avatar; });
     var free = global.AVATARS.kids.filter(function (a) { return used.indexOf(a.id) === -1; })[0];
     draft.childForm = { name: "", avatar: free ? free.id : "k1", birthday: "", pin: "" };
@@ -283,6 +283,7 @@
     }
     loginError = "";
     global.Store.setSession("parent", p.id);
+    global.App.applyUserLang();
     global.App.go({ screen: "parent", tab: "dashboard" });
     U.toast(t("auth.welcomeBack", { name: p.name }), "good");
   });
@@ -314,6 +315,7 @@
   function enterAsChild(c) {
     loginError = "";
     global.Store.setSession("child", c.id);
+    global.App.applyUserLang();
     global.App.go({ screen: "child", tab: "me" });
     U.toast(t("auth.welcomeBack", { name: c.name }), "good");
   }

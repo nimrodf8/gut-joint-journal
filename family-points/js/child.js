@@ -57,10 +57,10 @@
       '<div class="card flush">' + (recent.length
         ? '<ul class="list">' + recent.map(function (l) {
             var task = S.task(l.taskId);
-            var label2 = task ? U.taskTitle(task)
-              : l.kind === "start" ? t("ledger.start")
-              : (l.note || t("ledger.manual"));
-            return "<li><div class=\"grow\"><div class=\"title\">" + esc(label2) + "</div>" +
+            var label2 = task ? U.taskTitleHtml(task)
+              : l.kind === "start" ? esc(t("ledger.start"))
+              : l.note ? U.trHtml(l, "note") : esc(t("ledger.manual"));
+            return "<li><div class=\"grow\"><div class=\"title\">" + label2 + "</div>" +
               '<div class="sub">' + esc(U.fmtDateTime(l.ts)) + "</div></div>" +
               U.points(l.self) + "</li>";
           }).join("") + "</ul>"
@@ -80,7 +80,7 @@
     s.categories.forEach(function (cat) {
       var list = mine.filter(function (task) { return task.categoryId === cat.id; });
       if (!list.length) return;
-      html += '<div class="section-title">' + cat.icon + " " + esc(U.categoryName(cat)) + "</div>" +
+      html += '<div class="section-title">' + cat.icon + " " + U.categoryNameHtml(cat) + "</div>" +
         '<div class="card flush">' + list.map(function (task) { return taskRow(c, task); }).join("") + "</div>";
     });
     var orphans = mine.filter(function (task) { return !S.category(task.categoryId); });
@@ -103,7 +103,7 @@
     if (task.scope !== "personal") reward.push('<small>' + esc(t("nav.group")) + "</small> " + U.points(task.onDoneGroup));
 
     return '<div class="task-row">' +
-      '<div class="grow"><div class="title">' + esc(U.taskTitle(task)) + "</div>" +
+      '<div class="grow"><div class="title">' + U.taskTitleHtml(task) + "</div>" +
         '<div class="sub">' + reward.join(" · ") +
         (S.num(task.onMissSelf) < 0 ? " · <small>" + esc(t("tasks.onMiss")) + " " + U.points(task.onMissSelf) + "</small>" : "") +
         "</div>" + (status ? '<div class="sub">' + status + "</div>" : "") + "</div>" +
@@ -155,7 +155,7 @@
       '<div class="card">' + (s.outings.length
         ? s.outings.slice(0, 8).map(function (o) {
             return '<div class="kv"><span class="k">' + esc(U.fmtDate(o.ts)) + "</span><span>🎡 " +
-              esc(o.label) + " · " + esc(nameOf(o.chooserId)) + "</span></div>";
+              U.trHtml(o, "label") + " · " + esc(nameOf(o.chooserId)) + "</span></div>";
           }).join("")
         : '<p class="muted">' + esc(t("outing.empty")) + "</p>") + "</div>";
 
@@ -188,7 +188,7 @@
         (items.length
           ? '<ul class="list" style="margin-top:10px">' + items.map(function (it, i) {
               return "<li>" + (ordered ? '<span class="rank-badge">' + (i + 1) + "</span>" : "") +
-                '<div class="grow"><div class="title" style="white-space:pre-wrap">' + esc(it.text) + "</div>" +
+                '<div class="grow"><div class="title" style="white-space:pre-wrap">' + U.trHtml(it, "text") + "</div>" +
                 '<div class="sub">' + esc(U.fmtDate(it.ts)) + "</div></div>" +
                 (ordered && i > 0 ? '<button class="icon-btn" data-act="c.itemMove" data-field="' + field +
                   '" data-item="' + it.id + '" data-dir="-1" aria-label="' + esc(t("kids.moveUp")) + '">↑</button>' : "") +

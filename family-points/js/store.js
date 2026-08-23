@@ -101,7 +101,8 @@
         startPoints: START_POINTS,
         groupGoal: 1000,
         weekStart: 0,
-        movieDay: 6
+        movieDay: 6,
+        translate: true
       },
       parents: [],
       children: [],
@@ -136,6 +137,19 @@
     if (!s.categories || !s.categories.length) s.categories = defaultCategories();
     if (s.settings && s.settings.movieDay === undefined) s.settings.movieDay = 6;
     if (s.settings && s.settings.weekStart === undefined) s.settings.weekStart = 0;
+    if (s.settings && s.settings.translate === undefined) s.settings.translate = true;
+    var fallback = (s.settings && s.settings.lang) || "en";
+    (s.parents || []).concat(s.children || []).forEach(function (u) {
+      if (!u.lang) u.lang = fallback;
+    });
+  }
+
+  function setUserLang(kind, id, lang) {
+    var user = kind === "parent" ? parent(id) : child(id);
+    if (!user) return null;
+    user.lang = lang;
+    save();
+    return user;
   }
   function exists() { return !!state; }
   function get() { return state; }
@@ -170,6 +184,7 @@
       name: name,
       username: String(username || "").trim().toLowerCase(),
       avatar: avatar || "p1",
+      lang: authorLang(),
       secret: makeSecret(password),
       createdAt: now()
     };
@@ -205,6 +220,7 @@
       id: uid("kid"),
       name: data.name,
       avatar: data.avatar || "k1",
+      lang: data.lang || state.settings.lang,
       birthday: data.birthday || "",
       pin: data.pin ? makeSecret(String(data.pin)) : null,
       notes: [],
@@ -240,6 +256,21 @@
     save();
   }
 
+  /* The language a piece of text was written in, so a reader in another
+     language can be shown a translation of it. */
+  function authorLang() {
+    return global.I18N ? global.I18N.lang : "en";
+  }
+  function stamp(owner, field) {
+    owner.srcLang = authorLang();
+    if (global.Translate && global.Translate.detect) {
+      global.Translate.detect(owner[field], owner.srcLang, function (lang) {
+        if (lang && lang !== owner.srcLang) { owner.srcLang = lang; save(); }
+      });
+    }
+    return owner;
+  }
+
   function byId(list, id) {
     for (var i = 0; i < list.length; i++) if (list[i].id === id) return list[i];
     return null;
@@ -252,15 +283,37 @@
   /* ---------------- tasks ---------------- */
 
   function saveTask(data) {
+    // A task named by a parent is translated for anyone reading in another
+    // language; the built-in ones already have a key for every language.
+    if (data.title && !data.titleKey) {
+      var previous = data.id ? byId(state.tasks, data.id) : null;
+      if (!previous || previous.title !== data.title) {
+        delete data.tr;
+        stamp(data, "title");
+      }
+    } else {
+      delete data.srcLang;
+      delete data.tr;
+    }
     if (data.id) {
       var t = byId(state.tasks, data.id);
-      if (t) Object.keys(data).forEach(function (k) { t[k] = data[k]; });
+      if (t) {
+        delete t.tr;
+        Object.keys(data).forEach(function (k) { t[k] = data[k]; });
+      }
     } else {
       data.id = uid("task");
       state.tasks.push(data);
     }
     save();
     return data;
+  }
+
+  function addCategory(name, icon) {
+    var cat = stamp({ id: uid("cat"), name: name, icon: icon }, "name");
+    state.categories.push(cat);
+    save();
+    return cat;
   }
   function deleteTask(id) {
     state.tasks = state.tasks.filter(function (t) { return t.id !== id; });
@@ -299,10 +352,12 @@
   }
 
   function adjust(childId, self, group, note, byParentId) {
-    return record({
+    var entry = {
       childId: childId, taskId: null, kind: "manual",
       self: num(self), group: num(group), note: note || "", by: byParentId || null
-    });
+    };
+    if (entry.note) stamp(entry, "note");
+    return record(entry);
   }
 
   function num(v) { var n = parseInt(v, 10); return isNaN(n) ? 0 : n; }
@@ -438,10 +493,10 @@
   function redeemOuting(chooserId, label, note, byParentId) {
     var goal = num(state.settings.groupGoal) || 1000;
     if (groupTotal() < goal) return null;   // never let the bank go negative
-    var entry = {
+    var entry = stamp({
       id: uid("out"), ts: now(), date: dayKey(),
       chooserId: chooserId, label: label, note: note || "", spent: goal, by: byParentId || null
-    };
+    }, "label");
     state.outings.unshift(entry);
     record({ childId: null, taskId: null, kind: "redeem", self: 0, group: -goal, note: label, by: byParentId || null });
     save();
@@ -471,7 +526,7 @@
     var c = child(childId);
     if (!c || !text) return null;
     if (!c[field]) c[field] = [];
-    var item = { id: uid(field), text: text, ts: now() };
+    var item = stamp({ id: uid(field), text: text, ts: now() }, "text");
     c[field].unshift(item);
     save();
     return item;
@@ -513,6 +568,7 @@
     addParent: addParent, findParent: findParent, removeParent: removeParent,
     setParentPassword: setParentPassword, parent: parent,
     addChild: addChild, removeChild: removeChild, updateChild: updateChild,
+    setUserLang: setUserLang, addCategory: addCategory, authorLang: authorLang,
     setChildPin: setChildPin, child: child,
     saveTask: saveTask, deleteTask: deleteTask, tasksForChild: tasksForChild, task: task,
     category: category,

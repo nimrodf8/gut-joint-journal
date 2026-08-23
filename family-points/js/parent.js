@@ -128,7 +128,7 @@
     return '<div class="section-title">' + esc(t("dash.activity")) + "</div>" +
       '<div class="card flush"><ul class="list">' + rows.map(function (l) {
         return "<li>" + (l.childId ? U.avatar((S.child(l.childId) || {}).avatar, 34) : '<span class="rank-badge">👨‍👩‍👧</span>') +
-          '<div class="grow"><div class="title">' + esc(ledgerLabel(l)) + "</div>" +
+          '<div class="grow"><div class="title">' + ledgerLabelHtml(l) + "</div>" +
           '<div class="sub">' + esc(l.childId ? nameOf(l.childId) : t("outing.title")) + " · " + esc(U.relTime(l.ts)) + "</div></div>" +
           '<div class="pts-cell">' + (l.self ? U.points(l.self) : "") +
           (l.group ? '<small>' + esc(t("tasks.groupPts")) + " " + U.points(l.group) + "</small>" : "") + "</div></li>";
@@ -143,6 +143,15 @@
     if (l.kind === "redeem") return t("ledger.redeem") + (l.note ? " · " + l.note : "");
     if (l.kind === "start") return t("ledger.start");
     return l.note || t("ledger.manual");
+  }
+  function ledgerLabelHtml(l) {
+    if (l.kind === "award" || l.kind === "penalty") {
+      var task = S.task(l.taskId);
+      return task ? U.taskTitleHtml(task) : esc(t(l.kind === "award" ? "ledger.award" : "ledger.penalty"));
+    }
+    if (l.kind === "redeem") return esc(t("ledger.redeem")) + (l.note ? " · " + esc(l.note) : "");
+    if (l.kind === "start") return esc(t("ledger.start"));
+    return l.note ? U.trHtml(l, "note") : esc(t("ledger.manual"));
   }
   function nameOf(childId) { var c = S.child(childId); return c ? c.name : "—"; }
 
@@ -162,7 +171,7 @@
         return t2.categoryId === cat.id && (showInactive || t2.active);
       });
       if (!list.length) return;
-      html += '<div class="section-title">' + cat.icon + " " + esc(U.categoryName(cat)) + "</div>" +
+      html += '<div class="section-title">' + cat.icon + " " + U.categoryNameHtml(cat) + "</div>" +
         '<div class="card flush">' + list.map(taskRow).join("") + "</div>";
     });
 
@@ -194,7 +203,7 @@
 
     return '<div class="task-row' + (task.active ? "" : " paused") + '">' +
       '<div class="grow">' +
-        '<div class="title">' + esc(U.taskTitle(task)) + "</div>" +
+        '<div class="title">' + U.taskTitleHtml(task) + "</div>" +
         '<div class="sub">' + esc(scopeTag) + " · " + esc(assignTag) + " · " + esc(t("tasks.repeat" + cap(task.repeat))) +
         (task.active ? "" : " · " + esc(t("tasks.inactive"))) + "</div>" +
         pts +
@@ -301,7 +310,8 @@
           return '<li class="tappable" data-act="p.openChild" data-id="' + c.id + '">' +
             U.avatar(c.avatar, 44) +
             '<div class="grow"><div class="title">' + esc(c.name) + "</div>" +
-            '<div class="sub">' + esc(t("kids.week")) + " " + U.points(S.weekEarned(c.id)) + "</div></div>" +
+            '<div class="sub">' + esc(t("kids.week")) + " " + U.points(S.weekEarned(c.id)) +
+            " · " + esc(t("lang." + (c.lang || S.get().settings.lang))) + "</div></div>" +
             '<strong class="score" style="font-size:1.15rem">' + S.balance(c.id) + "</strong></li>";
         }).join("") + "</ul></div>"
       : U.emptyState(t("common.empty"), "🧒");
@@ -340,7 +350,7 @@
     html += '<div class="section-title">' + esc(t("kids.history")) + "</div>" +
       '<div class="card flush">' + (entries.length
         ? '<ul class="list">' + entries.slice(0, 40).map(function (l) {
-            return "<li><div class=\"grow\"><div class=\"title\">" + esc(ledgerLabel(l)) + "</div>" +
+            return "<li><div class=\"grow\"><div class=\"title\">" + ledgerLabelHtml(l) + "</div>" +
               '<div class="sub">' + esc(U.fmtDateTime(l.ts)) + (l.by && S.parent(l.by) ? " · " + esc(S.parent(l.by).name) : "") + "</div></div>" +
               '<div class="pts-cell">' + U.points(l.self) +
               (l.group ? "<small>" + esc(t("tasks.groupPts")) + " " + U.points(l.group) + "</small>" : "") + "</div></li>";
@@ -360,7 +370,7 @@
         (items.length
           ? '<ul class="list" style="margin-top:8px">' + items.map(function (it, i) {
               return "<li>" + (ordered ? '<span class="rank-badge">' + (i + 1) + "</span>" : "") +
-                '<div class="grow"><div class="title" style="white-space:pre-wrap">' + esc(it.text) + "</div>" +
+                '<div class="grow"><div class="title" style="white-space:pre-wrap">' + U.trHtml(it, "text") + "</div>" +
                 '<div class="sub">' + esc(U.fmtDate(it.ts)) + "</div></div>" +
                 (ordered ? '<button class="icon-btn" data-act="p.itemMove" data-id="' + child.id + '" data-field="' + field +
                   '" data-item="' + it.id + '" data-dir="-1" aria-label="' + esc(t("kids.moveUp")) + '">↑</button>' : "") +
@@ -389,13 +399,17 @@
             '<input id="cnPin" type="tel" inputmode="numeric" maxlength="4" class="pin-input" placeholder="' +
               (c.pin ? "••••" : "") + '"><div class="hint">' + esc(t("setup.pinHelp")) + "</div></div>" +
         "</div>" +
+        '<div class="field"><span class="field-label">' + esc(t("tr.childLang")) + "</span>" +
+          langChips(c.lang || S.get().settings.lang, "p.childLang") + "</div>" +
         '<div class="field"><span class="field-label">' + esc(t("common.avatar")) + "</span>" +
           U.avatarPicker(global.AVATARS.kids, c.avatar, "p.childAvatar") + "</div>" +
         '<button class="btn block" type="submit">' + esc(t("common.save")) + "</button>" +
       "</form>");
     editingAvatar = c.avatar;
+    editingLang = c.lang || S.get().settings.lang;
   }
   var editingAvatar = "k1";
+  var editingLang = "en";
   function nextFreeAvatar() {
     var used = S.get().children.map(function (c) { return c.avatar; });
     var free = global.AVATARS.kids.filter(function (a) { return used.indexOf(a.id) === -1; })[0];
@@ -413,7 +427,7 @@
       var c = S.child(cl.childId), task = S.task(cl.taskId);
       if (!c || !task) return "";
       return "<li>" + U.avatar(c.avatar, 40) +
-        '<div class="grow"><div class="title">' + esc(U.taskTitle(task)) + "</div>" +
+        '<div class="grow"><div class="title">' + U.taskTitleHtml(task) + "</div>" +
         '<div class="sub">' + esc(c.name) + " · " + esc(t("appr.claimedAt", { when: U.relTime(cl.ts) })) + "</div>" +
         '<div class="sub">' + (task.scope !== "group" ? U.points(task.onDoneSelf) : "") +
           (task.scope !== "personal" ? " <small>" + esc(t("tasks.groupPts")) + "</small> " + U.points(task.onDoneGroup) : "") + "</div></div>" +
@@ -431,14 +445,15 @@
     var s = S.get();
     var html = '<div class="wrap"><h1>' + esc(t("family.title")) + "</h1>";
 
+    var mine = me();
     html += '<form data-act="p.settingsSave" class="card">' +
       '<div class="field"><label for="sName">' + esc(t("setup.familyName")) + "</label>" +
         '<input id="sName" type="text" value="' + esc(s.settings.familyName) + '"></div>' +
-      '<div class="field"><span class="field-label">' + esc(t("common.language")) + "</span>" +
-        '<div class="chips">' + global.I18N.langs.map(function (l) {
-          return '<button type="button" class="chip' + (l.code === s.settings.lang ? " on" : "") +
-            '" data-act="p.lang" data-lang="' + l.code + '">' + l.flag + " " + esc(l.label) + "</button>";
-        }).join("") + "</div></div>" +
+      '<div class="field"><span class="field-label">' + esc(t("tr.yourLang")) + "</span>" +
+        langChips(mine.lang || s.settings.lang, "p.myLang") +
+        '<div class="hint">' + esc(t("tr.userLangHint")) + "</div></div>" +
+      '<div class="field"><span class="field-label">' + esc(t("tr.defaultLang")) + "</span>" +
+        langChips(s.settings.lang, "p.lang") + "</div>" +
       '<div class="field"><label for="sGoal">' + esc(t("family.goal")) + "</label>" +
         '<input id="sGoal" type="number" min="1" value="' + S.num(s.settings.groupGoal) + '">' +
         '<div class="hint">' + esc(t("family.goalHint")) + "</div></div>" +
@@ -459,7 +474,7 @@
       '<div class="card flush"><ul class="list">' + s.parents.map(function (p) {
         return "<li>" + U.avatar(p.avatar, 40) +
           '<div class="grow"><div class="title">' + esc(p.name) + "</div>" +
-          '<div class="sub">' + esc(p.username) + "</div></div>" +
+          '<div class="sub">' + esc(p.username) + " · " + esc(t("lang." + (p.lang || s.settings.lang))) + "</div></div>" +
           '<button class="icon-btn" data-act="p.parentPass" data-id="' + p.id + '">🔑</button>' +
           (s.parents.length > 1 ? '<button class="icon-btn" data-act="p.parentDelete" data-id="' + p.id + '">🗑️</button>' : "") +
           "</li>";
@@ -469,7 +484,7 @@
       '<button class="btn small soft" data-act="p.catNew">＋</button></div>' +
       '<div class="card flush"><ul class="list">' + s.categories.map(function (c) {
         return "<li><span class=\"rank-badge\">" + c.icon + "</span>" +
-          '<div class="grow"><div class="title">' + esc(U.categoryName(c)) + "</div>" +
+          '<div class="grow"><div class="title">' + U.categoryNameHtml(c) + "</div>" +
           '<div class="sub">' + s.tasks.filter(function (t2) { return t2.categoryId === c.id; }).length + " " + esc(t("tasks.title")) + "</div></div>" +
           '<button class="icon-btn" data-act="p.catDelete" data-id="' + c.id + '">🗑️</button></li>';
       }).join("") + "</ul></div>";
@@ -478,9 +493,11 @@
       '<div class="card">' + (s.outings.length
         ? s.outings.map(function (o) {
             return '<div class="kv"><span class="k">' + esc(U.fmtDate(o.ts)) + "</span><span>" +
-              esc(o.label) + " · " + esc(nameOf(o.chooserId)) + "</span></div>";
+              U.trHtml(o, "label") + " · " + esc(nameOf(o.chooserId)) + "</span></div>";
           }).join("")
         : '<p class="muted">' + esc(t("outing.empty")) + "</p>") + "</div>";
+
+    html += translationCard();
 
     html += '<div class="section-title">' + esc(t("family.data")) + "</div>" +
       '<div class="card stack">' +
@@ -492,6 +509,37 @@
       "</div>";
 
     return html + "</div>";
+  }
+
+  function langChips(active, action, extra) {
+    return '<div class="chips">' + global.I18N.langs.map(function (l) {
+      return '<button type="button" class="chip' + (l.code === active ? " on" : "") +
+        '" data-act="' + action + '" data-lang="' + l.code + '"' + (extra || "") + ">" +
+        l.flag + " " + esc(l.label) + "</button>";
+    }).join("") + "</div>";
+  }
+
+  function translationCard() {
+    var s = S.get();
+    var on = s.settings.translate !== false;
+    var st = global.Translate.status();
+    var line = !st.supported ? t("tr.unsupported")
+             : st.state === "working" ? t("tr.working")
+             : st.state === "needs-download" ? t("tr.prepare")
+             : t("tr.ready");
+
+    return '<div class="section-title">' + esc(t("tr.title")) + "</div>" +
+      '<div class="card">' +
+        '<small>' + esc(t("tr.hint")) + "</small>" +
+        '<label class="row tight mt"><input type="checkbox" style="width:auto"' + (on ? " checked" : "") +
+          ' data-act="p.trToggle"> ' + esc(t("tr.enabled")) + "</label>" +
+        '<div class="kv"><span class="k">' + esc(t("common.status")) + "</span><span>" +
+          (st.supported ? "" : "⚠️ ") + esc(line) + "</span></div>" +
+        (st.supported && on
+          ? '<button class="btn ghost block mt" data-act="p.trPrepare">⬇️ ' + esc(t("tr.prepare")) + "</button>"
+          : "") +
+        '<div class="hint">' + esc(t("tr.privacy")) + "</div>" +
+      "</div>";
   }
 
   /* ================= actions ================= */
@@ -602,10 +650,10 @@
     var pin = U.el("#cnPin", form).value.replace(/\D/g, "");
     if (pin && pin.length !== 4) return U.toast(t("setup.errPin"), "bad");
     if (d.id) {
-      S.updateChild(d.id, { name: name, birthday: birthday, avatar: editingAvatar });
+      S.updateChild(d.id, { name: name, birthday: birthday, avatar: editingAvatar, lang: editingLang });
       if (pin) S.setChildPin(d.id, pin);
     } else {
-      S.addChild({ name: name, birthday: birthday, avatar: editingAvatar, pin: pin }, me().id);
+      S.addChild({ name: name, birthday: birthday, avatar: editingAvatar, pin: pin, lang: editingLang }, me().id);
     }
     U.closeModal();
     U.toast(t("common.saved"), "good");
@@ -698,11 +746,32 @@
   });
 
   U.on("p.lang", function (d) {
-    var s = S.get();
-    s.settings.lang = d.lang;
+    S.get().settings.lang = d.lang;   // only the default for accounts made later
     S.save();
+    global.App.refresh();
+  });
+  U.on("p.myLang", function (d) {
+    S.setUserLang("parent", me().id, d.lang);
     global.I18N.setLang(d.lang);
     global.App.refresh();
+  });
+  U.on("p.childLang", function (d, node) {
+    editingLang = d.lang;
+    U.els(".modal-body [data-act='p.childLang']").forEach(function (b) { b.classList.remove("on"); });
+    node.classList.add("on");
+  });
+  U.on("p.trToggle", function (d, node) {
+    S.get().settings.translate = node.checked;
+    S.save();
+    global.App.refresh();
+  });
+  U.on("p.trPrepare", function () {
+    U.toast(t("tr.working"));
+    global.Translate.prepare(function () {
+      var st = global.Translate.status();
+      U.toast(st.state === "ready" ? t("tr.ready") : t("tr.unsupported"), st.state === "ready" ? "good" : "bad");
+      global.App.refresh();
+    });
   });
   U.on("p.settingsSave", function (d, form) {
     var s = S.get();
@@ -785,8 +854,7 @@
   U.on("p.catSave", function (d, form) {
     var name = U.el("#ncName", form).value.trim();
     if (!name) return U.toast(t("common.required"), "bad");
-    S.get().categories.push({ id: S.uid("cat"), name: name, icon: catIcon });
-    S.save();
+    S.addCategory(name, catIcon);
     U.closeModal();
     global.App.refresh();
   });
