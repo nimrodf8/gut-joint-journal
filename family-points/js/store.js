@@ -208,7 +208,8 @@
     state.settings.familyName = opts.familyName || "";
     if (opts.startPoints) state.settings.startPoints = opts.startPoints;
 
-    var parent = addParentRecord(opts.parent.name, opts.parent.username, opts.parent.password, opts.parent.avatar);
+    var parent = addParentRecord(opts.parent.name, opts.parent.username, opts.parent.password,
+                                 opts.parent.avatar, state.settings.lang);
     (opts.children || []).forEach(function (c) { addChild(c, parent.id); });
     if (opts.seedTasks !== false) {
       state.tasks = defaultTasks();
@@ -218,13 +219,13 @@
     return state;
   }
 
-  function addParentRecord(name, username, password, avatar) {
+  function addParentRecord(name, username, password, avatar, lang) {
     var p = {
       id: uid("par"),
       name: name,
       username: String(username || "").trim().toLowerCase(),
       avatar: avatar || "p1",
-      lang: authorLang(),
+      lang: lang || authorLang(),
       secret: makeSecret(password),
       createdAt: now()
     };

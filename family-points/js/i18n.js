@@ -89,6 +89,8 @@
     "setup.errChildren": "Add at least one child",
     "setup.errChildName": "Enter the child's name",
     "setup.errPin": "The PIN must be exactly 4 digits",
+    "setup.haveFamily": "Already set this family up somewhere else?",
+    "setup.restore": "Restore from a backup",
 
     "auth.parentTab": "Parent",
     "auth.childTab": "Child",
@@ -419,6 +421,8 @@
     "setup.errChildren": "Voeg minstens één kind toe",
     "setup.errChildName": "Vul de naam van het kind in",
     "setup.errPin": "De pincode moet precies 4 cijfers zijn",
+    "setup.haveFamily": "Dit gezin ergens anders al ingesteld?",
+    "setup.restore": "Terugzetten uit een back-up",
 
     "auth.parentTab": "Ouder",
     "auth.childTab": "Kind",
@@ -749,6 +753,8 @@
     "setup.errChildren": "נא להוסיף לפחות ילד אחד",
     "setup.errChildName": "נא להזין את שם הילד/ה",
     "setup.errPin": "הקוד חייב להיות בדיוק 4 ספרות",
+    "setup.haveFamily": "כבר הקמתם את המשפחה הזאת במקום אחר?",
+    "setup.restore": "שחזור מגיבוי",
 
     "auth.parentTab": "הורה",
     "auth.childTab": "ילד/ה",

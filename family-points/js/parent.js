@@ -1209,7 +1209,9 @@
     }
   }
 
-  U.on("p.import", function () {
+  /* Restoring is also how a second device joins a family that already exists,
+     so the same dialog is reachable before anyone has signed in. */
+  function importDialog() {
     U.modal(t("family.import"),
       '<p class="hint">' + esc(t("family.pasteHint")) + "</p>" +
       '<label class="btn ghost block mb" style="cursor:pointer">📂 ' + esc(t("family.pickFile")) +
@@ -1217,7 +1219,9 @@
       '<textarea id="importBox" style="min-height:150px;font-family:ui-monospace,monospace;font-size:.72rem"></textarea>' +
       '<button class="btn block mt" data-act="p.importText">' + esc(t("family.restore")) + "</button>",
       function () { bindImport(); });
-  });
+  }
+  U.on("p.import", importDialog);
+  U.on("app.restore", importDialog);
   U.on("p.importText", function () {
     var box = U.el("#importBox");
     if (box) applyBackup(box.value);
