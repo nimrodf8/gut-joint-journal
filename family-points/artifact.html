@@ -486,6 +486,8 @@ nav.tabs .badge {
     "setup.errChildren": "Add at least one child",
     "setup.errChildName": "Enter the child's name",
     "setup.errPin": "The PIN must be exactly 4 digits",
+    "setup.haveFamily": "Already set this family up somewhere else?",
+    "setup.restore": "Restore from a backup",
 
     "auth.parentTab": "Parent",
     "auth.childTab": "Child",
@@ -816,6 +818,8 @@ nav.tabs .badge {
     "setup.errChildren": "Voeg minstens één kind toe",
     "setup.errChildName": "Vul de naam van het kind in",
     "setup.errPin": "De pincode moet precies 4 cijfers zijn",
+    "setup.haveFamily": "Dit gezin ergens anders al ingesteld?",
+    "setup.restore": "Terugzetten uit een back-up",
 
     "auth.parentTab": "Ouder",
     "auth.childTab": "Kind",
@@ -1146,6 +1150,8 @@ nav.tabs .badge {
     "setup.errChildren": "נא להוסיף לפחות ילד אחד",
     "setup.errChildName": "נא להזין את שם הילד/ה",
     "setup.errPin": "הקוד חייב להיות בדיוק 4 ספרות",
+    "setup.haveFamily": "כבר הקמתם את המשפחה הזאת במקום אחר?",
+    "setup.restore": "שחזור מגיבוי",
 
     "auth.parentTab": "הורה",
     "auth.childTab": "ילד/ה",
@@ -1761,7 +1767,8 @@ nav.tabs .badge {
     state.settings.familyName = opts.familyName || "";
     if (opts.startPoints) state.settings.startPoints = opts.startPoints;
 
-    var parent = addParentRecord(opts.parent.name, opts.parent.username, opts.parent.password, opts.parent.avatar);
+    var parent = addParentRecord(opts.parent.name, opts.parent.username, opts.parent.password,
+                                 opts.parent.avatar, state.settings.lang);
     (opts.children || []).forEach(function (c) { addChild(c, parent.id); });
     if (opts.seedTasks !== false) {
       state.tasks = defaultTasks();
@@ -1771,13 +1778,13 @@ nav.tabs .badge {
     return state;
   }
 
-  function addParentRecord(name, username, password, avatar) {
+  function addParentRecord(name, username, password, avatar, lang) {
     var p = {
       id: uid("par"),
       name: name,
       username: String(username || "").trim().toLowerCase(),
       avatar: avatar || "p1",
-      lang: authorLang(),
+      lang: lang || authorLang(),
       secret: makeSecret(password),
       createdAt: now()
     };
@@ -2807,7 +2814,10 @@ nav.tabs .badge {
           return '<button type="button" class="chip' + (l.code === draft.lang ? " on" : "") +
             '" data-act="setup.lang" data-lang="' + l.code + '">' + l.flag + " " + esc(l.label) + "</button>";
         }).join("") + "</div></div>" +
-      '<button class="btn block mt" data-act="setup.next">' + esc(t("common.next")) + " →</button>";
+      '<button class="btn block mt" data-act="setup.next">' + esc(t("common.next")) + " →</button>" +
+      '<hr style="border:none;border-top:1px solid var(--line);margin:18px 0">' +
+      '<p class="hint" style="margin-top:0">' + esc(t("setup.haveFamily")) + "</p>" +
+      '<button class="btn ghost block" data-act="app.restore">⬆️ ' + esc(t("setup.restore")) + "</button>";
   }
 
   function stepParent() {
@@ -2988,6 +2998,8 @@ nav.tabs .badge {
         (loginError ? '<div class="error-msg">' + esc(loginError) + "</div>" : "") +
         (loginTab === "parent" ? parentLoginForm() : childLoginGrid(s)) +
       "</div>" +
+      '<div class="center">' +
+        '<button class="btn ghost small" data-act="app.restore">⬆️ ' + esc(t("setup.restore")) + "</button></div>" +
       '<div class="center"><div class="chips" style="justify-content:center">' +
         global.I18N.langs.map(function (l) {
           return '<button type="button" class="chip' + (l.code === global.I18N.lang ? " on" : "") +
@@ -4286,7 +4298,9 @@ nav.tabs .badge {
     }
   }
 
-  U.on("p.import", function () {
+  /* Restoring is also how a second device joins a family that already exists,
+     so the same dialog is reachable before anyone has signed in. */
+  function importDialog() {
     U.modal(t("family.import"),
       '<p class="hint">' + esc(t("family.pasteHint")) + "</p>" +
       '<label class="btn ghost block mb" style="cursor:pointer">📂 ' + esc(t("family.pickFile")) +
@@ -4294,7 +4308,9 @@ nav.tabs .badge {
       '<textarea id="importBox" style="min-height:150px;font-family:ui-monospace,monospace;font-size:.72rem"></textarea>' +
       '<button class="btn block mt" data-act="p.importText">' + esc(t("family.restore")) + "</button>",
       function () { bindImport(); });
-  });
+  }
+  U.on("p.import", importDialog);
+  U.on("app.restore", importDialog);
   U.on("p.importText", function () {
     var box = U.el("#importBox");
     if (box) applyBackup(box.value);
