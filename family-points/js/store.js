@@ -1,0 +1,531 @@
+/* Family Points — data model.
+   Everything lives in one localStorage record. Balances are never stored:
+   they are replayed from the ledger, so a wrong award can be traced and
+   corrected instead of silently drifting. */
+(function (global) {
+  "use strict";
+
+  var KEY = "familyPoints.v1";
+  var SESSION_KEY = "familyPoints.session";
+  var START_POINTS = 500;
+  var HASH_ROUNDS = 15000;
+
+  var state = null;
+
+  /* ---------------- small helpers ---------------- */
+
+  function uid(prefix) {
+    return (prefix || "id") + "_" + Math.random().toString(36).slice(2, 9) + Date.now().toString(36).slice(-4);
+  }
+  function now() { return new Date().toISOString(); }
+  function dayKey(d) {
+    var x = d ? new Date(d) : new Date();
+    return x.getFullYear() + "-" + pad(x.getMonth() + 1) + "-" + pad(x.getDate());
+  }
+  function pad(n) { return n < 10 ? "0" + n : "" + n; }
+  function clone(v) { return JSON.parse(JSON.stringify(v)); }
+
+  function salt() {
+    var s = "";
+    for (var i = 0; i < 16; i++) s += Math.floor(Math.random() * 16).toString(16);
+    return s;
+  }
+  function hash(secret, saltValue) {
+    var h = global.SHA256(saltValue + "|" + secret);
+    for (var i = 0; i < HASH_ROUNDS; i++) h = global.SHA256(h + saltValue);
+    return h;
+  }
+  function makeSecret(secret) {
+    var s = salt();
+    return { salt: s, hash: hash(secret, s), algo: "sha256x" + HASH_ROUNDS };
+  }
+  function checkSecret(record, secret) {
+    if (!record || !record.salt) return false;
+    return hash(secret, record.salt) === record.hash;
+  }
+
+  /* ---------------- defaults ---------------- */
+
+  function defaultCategories() {
+    return [
+      { id: "cat_cleaning", key: "cat.cleaning", icon: "🧽" },
+      { id: "cat_tidy", key: "cat.tidy", icon: "🧺" },
+      { id: "cat_school", key: "cat.school", icon: "📚" },
+      { id: "cat_play", key: "cat.play", icon: "🎲" },
+      { id: "cat_dutch", key: "cat.dutch", icon: "🇳🇱" },
+      { id: "cat_other", key: "cat.other", icon: "⭐" }
+    ];
+  }
+
+  /* onDone / onMiss are the point changes themselves, so a task can reward,
+     punish, or stay neutral (0 on done, negative on miss) with one shape. */
+  function defaultTasks() {
+    var t = [
+      ["seed.makeBed",     "cat_tidy",     "personal", 10,  -5,   0,  0, "daily"],
+      ["seed.tidyRoom",    "cat_tidy",     "personal", 15, -10,   0,  0, "weekly"],
+      ["seed.laundry",     "cat_tidy",     "personal",  0,  -5,   0,  0, "daily"],
+      ["seed.brushTeeth",  "cat_tidy",     "personal",  0, -10,   0,  0, "daily"],
+      ["seed.clearTable",  "cat_cleaning", "both",     15,  -5,  10,  0, "daily"],
+      ["seed.helpCook",    "cat_cleaning", "both",     20,   0,  10,  0, "weekly"],
+      ["seed.homework",    "cat_school",   "personal", 20, -20,   0,  0, "daily"],
+      ["seed.read20",      "cat_school",   "personal", 15,   0,   0,  0, "daily"],
+      ["seed.dutch15",     "cat_dutch",    "both",     25,   0,  10,  0, "daily"],
+      ["seed.familyGame",  "cat_play",     "both",     10,   0,  10,  0, "weekly"]
+    ];
+    return t.map(function (r) {
+      return {
+        id: uid("task"),
+        titleKey: r[0],
+        title: "",
+        categoryId: r[1],
+        scope: r[2],
+        onDoneSelf: r[3],
+        onMissSelf: r[4],
+        onDoneGroup: r[5],
+        onMissGroup: r[6],
+        repeat: r[7],
+        assign: "all",
+        assignIds: [],
+        active: true
+      };
+    });
+  }
+
+  function emptyState(lang) {
+    return {
+      version: 1,
+      createdAt: now(),
+      settings: {
+        familyName: "",
+        lang: lang || "en",
+        startPoints: START_POINTS,
+        groupGoal: 1000,
+        weekStart: 0,
+        movieDay: 6
+      },
+      parents: [],
+      children: [],
+      categories: defaultCategories(),
+      tasks: [],
+      ledger: [],
+      claims: [],
+      movieNights: [],
+      outings: []
+    };
+  }
+
+  /* ---------------- persistence ---------------- */
+
+  function load() {
+    try {
+      var raw = global.localStorage.getItem(KEY);
+      state = raw ? JSON.parse(raw) : null;
+    } catch (e) { state = null; }
+    if (state) migrate(state);
+    return state;
+  }
+  function save() {
+    try { global.localStorage.setItem(KEY, JSON.stringify(state)); }
+    catch (e) { /* quota or private mode — the UI stays usable for this session */ }
+    return state;
+  }
+  function migrate(s) {
+    if (!s.claims) s.claims = [];
+    if (!s.movieNights) s.movieNights = [];
+    if (!s.outings) s.outings = [];
+    if (!s.categories || !s.categories.length) s.categories = defaultCategories();
+    if (s.settings && s.settings.movieDay === undefined) s.settings.movieDay = 6;
+    if (s.settings && s.settings.weekStart === undefined) s.settings.weekStart = 0;
+  }
+  function exists() { return !!state; }
+  function get() { return state; }
+  function replace(next) {
+    state = next; migrate(state); save(); return state;
+  }
+  function wipe() {
+    try {
+      global.localStorage.removeItem(KEY);
+      global.localStorage.removeItem(SESSION_KEY);
+    } catch (e) {}
+    state = null;
+  }
+
+  /* ---------------- setup ---------------- */
+
+  function createFamily(opts) {
+    state = emptyState(opts.lang);
+    state.settings.familyName = opts.familyName || "";
+    if (opts.startPoints) state.settings.startPoints = opts.startPoints;
+
+    var parent = addParentRecord(opts.parent.name, opts.parent.username, opts.parent.password, opts.parent.avatar);
+    (opts.children || []).forEach(function (c) { addChild(c, parent.id); });
+    if (opts.seedTasks !== false) state.tasks = defaultTasks();
+    save();
+    return state;
+  }
+
+  function addParentRecord(name, username, password, avatar) {
+    var p = {
+      id: uid("par"),
+      name: name,
+      username: String(username || "").trim().toLowerCase(),
+      avatar: avatar || "p1",
+      secret: makeSecret(password),
+      createdAt: now()
+    };
+    state.parents.push(p);
+    return p;
+  }
+  function addParent(name, username, password, avatar) {
+    if (findParent(username)) return null;
+    var p = addParentRecord(name, username, password, avatar);
+    save();
+    return p;
+  }
+  function findParent(username) {
+    var u = String(username || "").trim().toLowerCase();
+    return state.parents.filter(function (p) { return p.username === u; })[0] || null;
+  }
+  function removeParent(id) {
+    if (state.parents.length <= 1) return false;
+    state.parents = state.parents.filter(function (p) { return p.id !== id; });
+    save();
+    return true;
+  }
+  function setParentPassword(id, password) {
+    var p = byId(state.parents, id);
+    if (!p) return false;
+    p.secret = makeSecret(password);
+    save();
+    return true;
+  }
+
+  function addChild(data, byParentId) {
+    var c = {
+      id: uid("kid"),
+      name: data.name,
+      avatar: data.avatar || "k1",
+      birthday: data.birthday || "",
+      pin: data.pin ? makeSecret(String(data.pin)) : null,
+      notes: [],
+      gifts: [],
+      outings: [],
+      createdAt: now()
+    };
+    state.children.push(c);
+    state.ledger.push({
+      id: uid("led"), ts: now(), childId: c.id, kind: "start",
+      self: state.settings.startPoints, group: 0, note: "", by: byParentId || null
+    });
+    save();
+    return c;
+  }
+  function removeChild(id) {
+    state.children = state.children.filter(function (c) { return c.id !== id; });
+    state.ledger = state.ledger.filter(function (l) { return l.childId !== id; });
+    state.claims = state.claims.filter(function (c) { return c.childId !== id; });
+    save();
+  }
+  function updateChild(id, patch) {
+    var c = byId(state.children, id);
+    if (!c) return null;
+    Object.keys(patch).forEach(function (k) { c[k] = patch[k]; });
+    save();
+    return c;
+  }
+  function setChildPin(id, pin) {
+    var c = byId(state.children, id);
+    if (!c) return;
+    c.pin = pin ? makeSecret(String(pin)) : null;
+    save();
+  }
+
+  function byId(list, id) {
+    for (var i = 0; i < list.length; i++) if (list[i].id === id) return list[i];
+    return null;
+  }
+  function child(id) { return byId(state.children, id); }
+  function parent(id) { return byId(state.parents, id); }
+  function task(id) { return byId(state.tasks, id); }
+  function category(id) { return byId(state.categories, id); }
+
+  /* ---------------- tasks ---------------- */
+
+  function saveTask(data) {
+    if (data.id) {
+      var t = byId(state.tasks, data.id);
+      if (t) Object.keys(data).forEach(function (k) { t[k] = data[k]; });
+    } else {
+      data.id = uid("task");
+      state.tasks.push(data);
+    }
+    save();
+    return data;
+  }
+  function deleteTask(id) {
+    state.tasks = state.tasks.filter(function (t) { return t.id !== id; });
+    state.claims = state.claims.filter(function (c) { return c.taskId !== id; });
+    save();
+  }
+  function tasksForChild(childId, includeInactive) {
+    return state.tasks.filter(function (t) {
+      if (!t.active && !includeInactive) return false;
+      if (t.assign === "all") return true;
+      return (t.assignIds || []).indexOf(childId) !== -1;
+    });
+  }
+
+  /* ---------------- points ---------------- */
+
+  function record(entry) {
+    entry.id = uid("led");
+    entry.ts = entry.ts || now();
+    state.ledger.push(entry);
+    save();
+    return entry;
+  }
+
+  function awardTask(childId, taskId, outcome, byParentId) {
+    var t = task(taskId);
+    if (!t) return null;
+    var done = outcome === "done";
+    var self = 0, group = 0;
+    if (t.scope === "personal" || t.scope === "both") self = done ? num(t.onDoneSelf) : num(t.onMissSelf);
+    if (t.scope === "group" || t.scope === "both") group = done ? num(t.onDoneGroup) : num(t.onMissGroup);
+    return record({
+      childId: childId, taskId: taskId, kind: done ? "award" : "penalty",
+      self: self, group: group, note: "", by: byParentId || null
+    });
+  }
+
+  function adjust(childId, self, group, note, byParentId) {
+    return record({
+      childId: childId, taskId: null, kind: "manual",
+      self: num(self), group: num(group), note: note || "", by: byParentId || null
+    });
+  }
+
+  function num(v) { var n = parseInt(v, 10); return isNaN(n) ? 0 : n; }
+
+  function balance(childId) {
+    return state.ledger.reduce(function (sum, l) {
+      return l.childId === childId ? sum + num(l.self) : sum;
+    }, 0);
+  }
+  function groupTotal() {
+    return state.ledger.reduce(function (sum, l) { return sum + num(l.group); }, 0);
+  }
+  function earnedBetween(childId, fromTs, toTs) {
+    return state.ledger.reduce(function (sum, l) {
+      if (l.childId !== childId || l.kind === "start") return sum;
+      if (l.ts < fromTs || l.ts > toTs) return sum;
+      return sum + num(l.self);
+    }, 0);
+  }
+
+  /* ---------------- weeks, birthdays ---------------- */
+
+  function weekRange(ref) {
+    var d = ref ? new Date(ref) : new Date();
+    var start = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+    var diff = (start.getDay() - state.settings.weekStart + 7) % 7;
+    start.setDate(start.getDate() - diff);
+    var end = new Date(start);
+    end.setDate(end.getDate() + 7);
+    return { start: start, end: end, startTs: start.toISOString(), endTs: end.toISOString() };
+  }
+
+  function weekEarned(childId, ref) {
+    var w = weekRange(ref);
+    return earnedBetween(childId, w.startTs, w.endTs);
+  }
+
+  /* Winner of the week: most points earned since the week started.
+     Ties break on the overall balance, then on name, so the result is stable. */
+  function weekWinner(ref) {
+    var rows = state.children.map(function (c) {
+      return { child: c, earned: weekEarned(c.id, ref), balance: balance(c.id) };
+    }).filter(function (r) { return r.earned > 0; });
+    if (!rows.length) return null;
+    rows.sort(cmpRows);
+    return rows[0];
+  }
+
+  function standings() {
+    return state.children.map(function (c) {
+      return { child: c, balance: balance(c.id), earned: weekEarned(c.id) };
+    }).sort(cmpRows);
+  }
+
+  function cmpRows(a, b) {
+    if (b.earned !== a.earned) return b.earned - a.earned;
+    if (b.balance !== a.balance) return b.balance - a.balance;
+    return a.child.name.localeCompare(b.child.name);
+  }
+
+  function topScorer() {
+    var rows = state.children.map(function (c) {
+      return { child: c, balance: balance(c.id), earned: weekEarned(c.id) };
+    });
+    if (!rows.length) return null;
+    rows.sort(function (a, b) {
+      if (b.balance !== a.balance) return b.balance - a.balance;
+      return a.child.name.localeCompare(b.child.name);
+    });
+    return rows[0];
+  }
+
+  function birthdayInfo(c) {
+    if (!c.birthday) return null;
+    var parts = String(c.birthday).split("-");
+    if (parts.length < 3) return null;
+    var by = +parts[0], bm = +parts[1] - 1, bd = +parts[2];
+    var today = new Date();
+    today = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+    var next = new Date(today.getFullYear(), bm, bd);
+    if (next < today) next = new Date(today.getFullYear() + 1, bm, bd);
+    var days = Math.round((next - today) / 86400000);
+    return { date: next, days: days, turning: next.getFullYear() - by, age: today.getFullYear() - by - (next.getFullYear() > today.getFullYear() ? 0 : 1) };
+  }
+
+  /* ---------------- claims ---------------- */
+
+  function claimTask(childId, taskId) {
+    var open = state.claims.filter(function (c) {
+      return c.childId === childId && c.taskId === taskId && c.status === "pending";
+    })[0];
+    if (open) return open;
+    var claim = {
+      id: uid("clm"), childId: childId, taskId: taskId,
+      ts: now(), dayKey: dayKey(), status: "pending", decidedBy: null, decidedTs: null
+    };
+    state.claims.push(claim);
+    save();
+    return claim;
+  }
+  function pendingClaims() {
+    return state.claims.filter(function (c) { return c.status === "pending"; })
+      .sort(function (a, b) { return a.ts < b.ts ? -1 : 1; });
+  }
+  function decideClaim(claimId, approve, byParentId) {
+    var c = byId(state.claims, claimId);
+    if (!c || c.status !== "pending") return null;
+    c.status = approve ? "approved" : "rejected";
+    c.decidedBy = byParentId || null;
+    c.decidedTs = now();
+    if (approve) awardTask(c.childId, c.taskId, "done", byParentId);
+    save();
+    return c;
+  }
+  function claimFor(childId, taskId) {
+    var today = dayKey();
+    var mine = state.claims.filter(function (c) {
+      return c.childId === childId && c.taskId === taskId &&
+             (c.status === "pending" || c.dayKey === today);
+    });
+    return mine[mine.length - 1] || null;
+  }
+
+  /* ---------------- rewards ---------------- */
+
+  function goalProgress() {
+    var total = groupTotal();
+    var goal = num(state.settings.groupGoal) || 1000;
+    return { total: total, goal: goal, reached: total >= goal, missing: Math.max(0, goal - total),
+             pct: Math.max(0, Math.min(100, Math.round(total / goal * 100))) };
+  }
+
+  function redeemOuting(chooserId, label, note, byParentId) {
+    var goal = num(state.settings.groupGoal) || 1000;
+    if (groupTotal() < goal) return null;   // never let the bank go negative
+    var entry = {
+      id: uid("out"), ts: now(), date: dayKey(),
+      chooserId: chooserId, label: label, note: note || "", spent: goal, by: byParentId || null
+    };
+    state.outings.unshift(entry);
+    record({ childId: null, taskId: null, kind: "redeem", self: 0, group: -goal, note: label, by: byParentId || null });
+    save();
+    return entry;
+  }
+
+  function recordMovieNight(winnerId, movie, note, byParentId) {
+    var entry = {
+      id: uid("mov"), ts: now(), date: dayKey(),
+      winnerId: winnerId, movie: movie, note: note || "", by: byParentId || null
+    };
+    state.movieNights.unshift(entry);
+    save();
+    return entry;
+  }
+  function movieNightToday() {
+    var today = dayKey();
+    return state.movieNights.filter(function (m) { return m.date === today; })[0] || null;
+  }
+  function isMovieDay() {
+    return new Date().getDay() === num(state.settings.movieDay);
+  }
+
+  /* ---------------- child content ---------------- */
+
+  function addListItem(childId, field, text) {
+    var c = child(childId);
+    if (!c || !text) return null;
+    if (!c[field]) c[field] = [];
+    var item = { id: uid(field), text: text, ts: now() };
+    c[field].unshift(item);
+    save();
+    return item;
+  }
+  function removeListItem(childId, field, itemId) {
+    var c = child(childId);
+    if (!c || !c[field]) return;
+    c[field] = c[field].filter(function (i) { return i.id !== itemId; });
+    save();
+  }
+  function moveListItem(childId, field, itemId, dir) {
+    var c = child(childId);
+    if (!c || !c[field]) return;
+    var list = c[field];
+    var i = list.findIndex(function (x) { return x.id === itemId; });
+    var j = i + dir;
+    if (i < 0 || j < 0 || j >= list.length) return;
+    var tmp = list[i]; list[i] = list[j]; list[j] = tmp;
+    save();
+  }
+
+  /* ---------------- session ---------------- */
+
+  function setSession(kind, id) {
+    try { global.localStorage.setItem(SESSION_KEY, JSON.stringify({ kind: kind, id: id, ts: now() })); } catch (e) {}
+  }
+  function getSession() {
+    try { return JSON.parse(global.localStorage.getItem(SESSION_KEY) || "null"); }
+    catch (e) { return null; }
+  }
+  function clearSession() {
+    try { global.localStorage.removeItem(SESSION_KEY); } catch (e) {}
+  }
+
+  global.Store = {
+    KEY: KEY, START_POINTS: START_POINTS,
+    load: load, save: save, get: get, exists: exists, replace: replace, wipe: wipe,
+    createFamily: createFamily, emptyState: emptyState, defaultTasks: defaultTasks,
+    addParent: addParent, findParent: findParent, removeParent: removeParent,
+    setParentPassword: setParentPassword, parent: parent,
+    addChild: addChild, removeChild: removeChild, updateChild: updateChild,
+    setChildPin: setChildPin, child: child,
+    saveTask: saveTask, deleteTask: deleteTask, tasksForChild: tasksForChild, task: task,
+    category: category,
+    awardTask: awardTask, adjust: adjust, record: record,
+    balance: balance, groupTotal: groupTotal, weekEarned: weekEarned, weekRange: weekRange,
+    weekWinner: weekWinner, standings: standings, topScorer: topScorer,
+    birthdayInfo: birthdayInfo,
+    claimTask: claimTask, pendingClaims: pendingClaims, decideClaim: decideClaim, claimFor: claimFor,
+    goalProgress: goalProgress, redeemOuting: redeemOuting,
+    recordMovieNight: recordMovieNight, movieNightToday: movieNightToday, isMovieDay: isMovieDay,
+    addListItem: addListItem, removeListItem: removeListItem, moveListItem: moveListItem,
+    setSession: setSession, getSession: getSession, clearSession: clearSession,
+    checkSecret: checkSecret, makeSecret: makeSecret,
+    uid: uid, now: now, dayKey: dayKey, clone: clone, num: num
+  };
+})(window);
