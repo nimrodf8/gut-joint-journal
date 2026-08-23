@@ -25,6 +25,19 @@ home screen). The first visit walks a parent through a four-step setup:
 3. The children — name, character, birthday and an optional 4-digit PIN
 4. Confirm; each child starts with **500 points** and a starter set of tasks
 
+## Everything is editable
+
+Nothing in the app is a fixed rule — the starter tasks, categories and rewards
+are examples to be renamed, repriced, reassigned or deleted:
+
+- **Tasks** — add, edit, pause or delete, and change what they are worth.
+- **Categories** — add, rename and change the icon.
+- **Rewards** — a full catalogue, see below.
+- **What the weekly winner wins** — "picks tonight's film" is only the default
+  label; set it to anything (*Family → What the weekly winner wins*).
+- **Notes, birthday wishes and outing wishes** — edit the text after writing it,
+  reorder the outing wishes, delete any of them.
+
 ## How the points work
 
 Every task carries the point change itself, so one shape covers all three cases
@@ -85,14 +98,16 @@ entered.
 
 **Parents** (username + password, full admin)
 
-- Home — group bank and progress to the goal, standings, birthday countdowns,
-  movie night, pending approvals, recent activity
+- Home — group bank and the next reward it is saving for, standings, birthday
+  countdowns, the weekly prize, pending approvals, recent activity
 - Tasks — create/edit tasks, and award ✓ *done* or ✗ *not done* to a child
+- Rewards — the whole catalogue, add/edit/delete, and hand a reward over
 - Kids — a page per child: balance, manual +/− adjustments with a reason,
   wish list, outing wishes, notes, and the full points history
-- Approvals — the "I did it" reports the children send, approved or rejected
-- Family — own language, default language for new accounts, translation,
-  group goal, week start, movie night day, parent accounts, categories,
+- Approvals — the "I did it" reports and the reward requests the children send,
+  approved or rejected
+- Family — own language, default language for new accounts, translation, the
+  weekly prize, week start, its day, parent accounts, categories,
   backup export/import
 
 **Children** (tap their character, plus a PIN if one was set)
@@ -100,19 +115,37 @@ entered.
 - Me — their points, rank, birthday countdown and recent movement
 - Tasks — everything assigned to them, with an **I did it** button that sends a
   report to the parents rather than awarding points directly
+- Rewards — what their points can buy, what is still out of reach and by how
+  much, and an **I want this** button that asks a parent
 - Group — the shared bank, the standings and the history of movie nights and
   outings
 - Notes — their own notebook, birthday wish list and outing wishes
 
-## The weekly rewards
+## Rewards
 
-- **Movie night.** The child who earned the most points *this week* wins the
-  week. On the movie night day (Saturday by default) the app names the winner
-  and a parent records the film they picked; every pick is kept in the history.
-- **Family outing.** Group points accumulate in the shared bank. When the bank
-  reaches the goal, the outing unlocks and the child with the **highest total
-  balance** chooses — from the outing wishes they saved on their own page.
-  Redeeming spends the goal amount out of the bank.
+The rewards screen is a catalogue the parents own. Every reward has a name, an
+icon and a price, and is paid from one of two places:
+
+- **Prizes to save up for** come out of the child's own points — extra screen
+  time, a treat, choosing what is for dinner. A child asks for one from their
+  Rewards tab, a parent approves it, and the points are deducted. A prize the
+  child cannot afford cannot be requested, and cannot be approved either: the
+  balance is re-checked at approval, so nothing ever goes negative. A prize can
+  be offered to all the children or to specific ones.
+- **Family rewards** come out of the group bank — pizza night, the cinema, a
+  family outing. The group bank aims at the cheapest family reward it cannot
+  afford yet, so the goal on the dashboard moves as the catalogue changes.
+  Once one is affordable it shows as unlocked, and the child with the **highest
+  balance** gets to choose — with their saved outing wishes offered as
+  one-tap suggestions for what exactly to do.
+
+Everything given is kept in a *Rewards given* history with who chose it and
+what it cost.
+
+Alongside the catalogue there is one weekly ritual: the child who earned the
+most points *during the week* wins the week and gets the weekly prize on the
+day you choose (Saturday, picking the film, by default). A parent records what
+was picked and the history keeps every one.
 
 Ties are broken by total balance and then by name, so the winner is always
 stable rather than random.
@@ -167,10 +200,13 @@ runs straight from `file://` without a server.
   רעיונות למתנות יום הולדת והעדפות לבילוי.
 - כל ילד מתחיל עם **500 נקודות**. לכל משימה מוגדר ניקוד כשמבוצעת וניקוד כשלא
   מבוצעת — כך שאפשר גם משימה ניטרלית שנותנת 0 בביצוע ומקזזת כשלא בוצעה.
-- **ערב סרט**: מי שצבר הכי הרבה נקודות במהלך השבוע זוכה, וביום שבת (ניתן לשינוי)
-  בוחר את הסרט — והבחירה מתועדת.
-- **בילוי משפחתי**: כשהקופה הקבוצתית מגיעה ליעד, הילד עם היתרה הגבוהה ביותר בוחר
-  מתוך העדפות הבילוי שרשם.
+- **הכול ניתן לעריכה**: המשימות, הנושאים והפרסים שמגיעים עם האפליקציה הם רק
+  דוגמאות — אפשר לשנות שם, מחיר, אייקון ושיוך, להוסיף חדשים או למחוק.
+- **קטלוג פרסים**: פרסים אישיים שנקנים מהנקודות של הילד (הילד מבקש, הורה מאשר,
+  והנקודות יורדות), ופרסים משפחתיים שנקנים מהקופה הקבוצתית — וכשפרס משפחתי הופך
+  זמין, הילד עם הכי הרבה נקודות בוחר, עם העדפות הבילוי שלו כהצעות בלחיצה.
+- **פרס שבועי**: מי שצבר הכי הרבה נקודות במהלך השבוע זוכה, ביום שנבחר (שבת
+  כברירת מחדל). "בוחר/ת את הסרט" זו רק ברירת המחדל — אפשר לכתוב כל פרס אחר.
 - **שפה אישית לכל משתמש**: כל הורה וכל ילד בוחרים את השפה שלהם, והכניסה לחשבון
   מחליפה את כל הממשק (כולל פריסת RTL לעברית) לשפה של אותו אדם.
 - **תרגום סימולטני**: הערה שילד כותב בעברית מוצגת בהולנדית להורה שקורא הולנדית,

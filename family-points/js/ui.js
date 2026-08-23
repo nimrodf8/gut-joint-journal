@@ -133,14 +133,19 @@
     if (!cat) return esc(t("cat.other"));
     return cat.key ? esc(t(cat.key)) : trHtml(cat, "name");
   }
-  function taskTitle(task) {
-    if (!task) return "";
-    return task.titleKey ? t(task.titleKey) : trValue(task, "title");
+  /* Tasks, rewards and history entries all name themselves the same way: a
+     translation key when it came with the app, free text when a parent typed
+     it — and free text gets translated for whoever is reading. */
+  function keyedTitle(obj) {
+    if (!obj) return "";
+    return obj.titleKey ? t(obj.titleKey) : trValue(obj, "title");
   }
-  function taskTitleHtml(task) {
-    if (!task) return "";
-    return task.titleKey ? esc(t(task.titleKey)) : trHtml(task, "title");
+  function keyedTitleHtml(obj) {
+    if (!obj) return "";
+    return obj.titleKey ? esc(t(obj.titleKey)) : trHtml(obj, "title");
   }
+  function taskTitle(task) { return keyedTitle(task); }
+  function taskTitleHtml(task) { return keyedTitleHtml(task); }
 
   function toast(msg, kind) {
     var box = el("#toast");
@@ -194,7 +199,9 @@
     iso: iso, signed: signed,
     points: points, fmtDate: fmtDate, fmtDateTime: fmtDateTime, weekdayName: weekdayName,
     relTime: relTime, categoryName: categoryName, categoryNameHtml: categoryNameHtml,
-    taskTitle: taskTitle, taskTitleHtml: taskTitleHtml, trValue: trValue, trHtml: trHtml,
+    taskTitle: taskTitle, taskTitleHtml: taskTitleHtml,
+    keyedTitle: keyedTitle, keyedTitleHtml: keyedTitleHtml,
+    trValue: trValue, trHtml: trHtml,
     toast: toast, modal: modal, closeModal: closeModal, confirmDialog: confirmDialog,
     emptyState: emptyState, progressBar: progressBar
   };

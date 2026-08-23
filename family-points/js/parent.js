@@ -15,6 +15,7 @@
   function render(tab, params) {
     if (tab === "dashboard") return dashboard();
     if (tab === "tasks") return tasksTab();
+    if (tab === "rewards") return rewardsTab();
     if (tab === "kids") return params && params.childId ? childDetail(params.childId) : kidsTab();
     if (tab === "approvals") return approvalsTab();
     return familyTab();
@@ -30,16 +31,7 @@
 
     var html = '<div class="wrap">';
 
-    html += '<div class="card hero">' +
-      '<div class="eyebrow">' + esc(t("dash.groupBank")) + "</div>" +
-      '<div class="row between nowrap"><div class="score">' + gp.total + "</div>" +
-      '<div class="tag" style="background:rgba(255,255,255,.2);color:#fff">' + esc(t("dash.goal", { n: U.iso(gp.goal) })) + "</div></div>" +
-      U.progressBar(gp.pct) +
-      (gp.reached
-        ? '<p style="margin-top:6px">🎉 ' + esc(t("dash.goalReached")) + "</p>" +
-          '<button class="btn ghost block mt" data-act="p.redeem">' + esc(t("dash.redeem")) + "</button>"
-        : '<small>' + esc(t("outing.needMore", { n: U.iso(gp.missing) })) + "</small>") +
-    "</div>";
+    html += bankCard(gp);
 
     if (pending.length) {
       html += '<div class="card tappable" data-act="p.goApprovals">' +
@@ -83,7 +75,7 @@
       body = "<p><strong>🍿 " + esc(todays.movie) + "</strong><br><small>" +
         esc(t("movie.pickedBy", { name: nameOf(todays.winnerId) })) + "</small></p>";
     } else if (isDay && winner) {
-      body = "<p>" + esc(t("movie.winner", { name: winner.child.name })) + "</p>" +
+      body = "<p><strong>" + esc(winner.child.name) + "</strong> · " + esc(weeklyPrize()) + "</p>" +
         '<button class="btn block" data-act="p.movie">' + esc(t("movie.record")) + "</button>";
     } else if (isDay) {
       body = '<p class="lead">' + esc(t("movie.noWinner")) + "</p>";
@@ -98,8 +90,15 @@
       : "";
 
     return '<div class="card">' +
-      '<div class="eyebrow">' + esc(t("movie.title")) + (isDay ? " · " + esc(t("movie.tonight")) : "") + "</div>" +
+      '<div class="eyebrow">' + esc(weeklyPrize()) + (isDay ? " · " + esc(t("movie.tonight")) : "") + "</div>" +
       body + past + "</div>";
+  }
+
+  /* The weekly winner's prize is a family decision, so the label is editable
+     and "picks tonight's film" is only the default. */
+  function weeklyPrize() {
+    var custom = (S.get().settings.weeklyPrize || "").trim();
+    return custom || t("movie.prizeDefault");
   }
 
   function birthdaysCard() {
@@ -129,7 +128,7 @@
       '<div class="card flush"><ul class="list">' + rows.map(function (l) {
         return "<li>" + (l.childId ? U.avatar((S.child(l.childId) || {}).avatar, 34) : '<span class="rank-badge">👨‍👩‍👧</span>') +
           '<div class="grow"><div class="title">' + ledgerLabelHtml(l) + "</div>" +
-          '<div class="sub">' + esc(l.childId ? nameOf(l.childId) : t("outing.title")) + " · " + esc(U.relTime(l.ts)) + "</div></div>" +
+          '<div class="sub">' + esc(l.childId ? nameOf(l.childId) : t("rewards.family")) + " · " + esc(U.relTime(l.ts)) + "</div></div>" +
           '<div class="pts-cell">' + (l.self ? U.points(l.self) : "") +
           (l.group ? '<small>' + esc(t("tasks.groupPts")) + " " + U.points(l.group) + "</small>" : "") + "</div></li>";
       }).join("") + "</ul></div>";
@@ -140,7 +139,10 @@
       var task = S.task(l.taskId);
       return (task ? U.taskTitle(task) : t(l.kind === "award" ? "ledger.award" : "ledger.penalty"));
     }
-    if (l.kind === "redeem") return t("ledger.redeem") + (l.note ? " · " + l.note : "");
+    if (l.kind === "reward" || l.kind === "redeem") {
+      var rw = S.reward(l.rewardId);
+      return (rw ? U.keyedTitle(rw) : t("ledger.reward")) + (l.note ? " · " + U.trValue(l, "note") : "");
+    }
     if (l.kind === "start") return t("ledger.start");
     return l.note || t("ledger.manual");
   }
@@ -149,7 +151,10 @@
       var task = S.task(l.taskId);
       return task ? U.taskTitleHtml(task) : esc(t(l.kind === "award" ? "ledger.award" : "ledger.penalty"));
     }
-    if (l.kind === "redeem") return esc(t("ledger.redeem")) + (l.note ? " · " + esc(l.note) : "");
+    if (l.kind === "reward" || l.kind === "redeem") {
+      var rw = S.reward(l.rewardId);
+      return (rw ? U.keyedTitleHtml(rw) : esc(t("ledger.reward"))) + (l.note ? " · " + U.trHtml(l, "note") : "");
+    }
     if (l.kind === "start") return esc(t("ledger.start"));
     return l.note ? U.trHtml(l, "note") : esc(t("ledger.manual"));
   }
@@ -283,7 +288,10 @@
 
   function captureTask() {
     var v = function (id) { var n = U.el("#" + id); return n ? n.value : null; };
-    if (v("tTitle") !== null) taskDraft.title = v("tTitle").trim();
+    if (v("tTitle") !== null) {
+      taskDraft.title = v("tTitle").trim();
+      if (taskDraft.titleKey && taskDraft.title !== t(taskDraft.titleKey)) taskDraft.titleKey = "";
+    }
     if (v("tCat") !== null) taskDraft.categoryId = v("tCat");
     if (v("tRep") !== null) taskDraft.repeat = v("tRep");
     if (v("tDoneSelf") !== null) taskDraft.onDoneSelf = S.num(v("tDoneSelf"));
@@ -297,6 +305,156 @@
     captureTask();
     var body = U.el(".modal-body");
     if (body) body.innerHTML = taskEditorBody();
+  }
+
+  /* ================= rewards ================= */
+
+  function rewardsTab() {
+    var s = S.get();
+    var gp = S.goalProgress();
+    var family = S.familyRewards(true);
+    var kidPrizes = s.rewards.filter(function (r) { return r.kind === "child"; });
+
+    var html = '<div class="wrap">' +
+      '<div class="row between"><h1>' + esc(t("rewards.title")) + "</h1>" +
+      '<button class="btn small" data-act="p.rewardNew">＋ ' + esc(t("rewards.add")) + "</button></div>" +
+      bankCard(gp);
+
+    html += '<div class="section-title">' + esc(t("rewards.family")) + "</div>" +
+      '<div class="card flush">' + (family.length
+        ? family.map(function (r) { return rewardRow(r, gp); }).join("")
+        : U.emptyState(t("rewards.empty"), "🎁")) + "</div>" +
+      '<p class="hint">' + esc(t("rewards.familyHint")) + "</p>";
+
+    html += '<div class="section-title">' + esc(t("rewards.child")) + "</div>" +
+      '<div class="card flush">' + (kidPrizes.length
+        ? kidPrizes.map(function (r) { return rewardRow(r, gp); }).join("")
+        : U.emptyState(t("rewards.empty"), "🎁")) + "</div>" +
+      '<p class="hint">' + esc(t("rewards.childHint")) + "</p>";
+
+    html += redemptionHistory(8);
+    return html + "</div>";
+  }
+
+  function bankCard(gp) {
+    return '<div class="card hero">' +
+      '<div class="eyebrow">' + esc(t("dash.groupBank")) + "</div>" +
+      '<div class="row between nowrap"><div class="score">' + gp.total + "</div>" +
+      '<div class="tag" style="background:rgba(255,255,255,.2);color:#fff">' +
+        esc(gp.next ? t("rewards.nextGoal", { name: U.keyedTitle(gp.next) }) : t("dash.goal", { n: U.iso(gp.goal) })) +
+      "</div></div>" +
+      U.progressBar(gp.pct) +
+      (gp.reached
+        ? '<p style="margin-top:6px">🎉 ' + esc(t("rewards.unlockedCount", { n: U.iso(gp.unlocked.length) })) + "</p>" +
+          '<button class="btn ghost block mt" data-act="p.redeemFamily">' + esc(t("dash.redeem")) + "</button>"
+        : '<small>' + esc(t("rewards.short", { n: U.iso(gp.missing) })) + "</small>") +
+    "</div>";
+  }
+
+  function rewardRow(r, gp) {
+    var family = r.kind === "family";
+    var affordable = family && S.num(r.cost) <= gp.total;
+    var who = family ? t("common.everyone")
+      : r.assign === "all" ? t("tasks.assignAll") : (r.assignIds || []).map(nameOf).join(", ");
+
+    var tag = family
+      ? (affordable ? '<span class="tag good">' + esc(t("rewards.unlocked")) + "</span>"
+                    : '<span class="tag">' + esc(t("rewards.short", { n: U.iso(S.num(r.cost) - gp.total) })) + "</span>")
+      : "";
+
+    return '<div class="task-row' + (r.active ? "" : " paused") + '">' +
+      '<span class="rank-badge" style="font-size:1.1rem">' + (r.icon || "🎁") + "</span>" +
+      '<div class="grow"><div class="title">' + U.keyedTitleHtml(r) + "</div>" +
+        '<div class="sub">' + esc(t("rewards.cost")) + " " + U.points(-S.num(r.cost)) + " · " + esc(who) +
+        (r.active ? "" : " · " + esc(t("tasks.inactive"))) + "</div>" +
+        (tag ? '<div class="sub">' + tag + "</div>" : "") +
+      "</div>" +
+      '<div class="row tight nowrap">' +
+        '<button class="btn small good" data-act="p.giveReward" data-id="' + r.id + '"' +
+          (family && !affordable ? " disabled" : "") + ">🎁</button>" +
+        '<button class="icon-btn" data-act="p.rewardEdit" data-id="' + r.id + '">✏️</button>' +
+      "</div></div>";
+  }
+
+  function redemptionHistory(limit) {
+    var rows = S.get().redemptions.slice(0, limit);
+    return '<div class="section-title">' + esc(t("rewards.history")) + "</div>" +
+      '<div class="card">' + (rows.length
+        ? rows.map(function (r) {
+            return '<div class="kv"><span class="k">' + esc(U.fmtDate(r.ts)) + "</span><span>" +
+              (r.icon || "🎁") + " " + U.keyedTitleHtml(r) +
+              (r.note ? " · " + U.trHtml(r, "note") : "") +
+              (r.childId ? " · " + esc(nameOf(r.childId)) : "") + "</span></div>";
+          }).join("")
+        : '<p class="muted">' + esc(t("common.empty")) + "</p>") + "</div>";
+  }
+
+  var rewardDraft = null;
+
+  function rewardEditor(r) {
+    var s = S.get();
+    rewardDraft = r ? S.clone(r) : {
+      id: "", title: "", titleKey: "", icon: "🎁", kind: "child", cost: 100,
+      assign: "all", assignIds: [], active: true
+    };
+    U.modal(r ? t("rewards.edit") : t("rewards.add"), rewardEditorBody());
+  }
+
+  function rewardEditorBody() {
+    var s = S.get();
+    var d = rewardDraft;
+    return '<form data-act="p.rewardSave">' +
+      '<div class="field"><label for="rTitle">' + esc(t("rewards.name")) + "</label>" +
+        '<input id="rTitle" type="text" value="' + esc(d.titleKey ? t(d.titleKey) : d.title) + '"></div>' +
+      '<div class="field"><span class="field-label">' + esc(t("rewards.icon")) + "</span>" +
+        '<div class="chips">' + global.AVATARS.rewardIcons.map(function (ic) {
+          return '<button type="button" class="chip' + (ic === d.icon ? " on" : "") +
+            '" data-act="p.rewardIcon" data-icon="' + ic + '">' + ic + "</button>";
+        }).join("") + "</div></div>" +
+      '<div class="field"><span class="field-label">' + esc(t("rewards.kind")) + "</span>" +
+        '<div class="seg">' + ["child", "family"].map(function (k) {
+          return '<button type="button" class="' + (d.kind === k ? "on" : "") + '" data-act="p.rewardKind" data-kind="' + k + '">' +
+            esc(t(k === "child" ? "rewards.kindChild" : "rewards.kindFamily")) + "</button>";
+        }).join("") + "</div>" +
+        '<div class="hint">' + esc(t(d.kind === "child" ? "rewards.childHint" : "rewards.familyHint")) + "</div></div>" +
+      '<div class="field"><label for="rCost">' + esc(t("rewards.cost")) + "</label>" +
+        '<input id="rCost" type="number" min="0" value="' + S.num(d.cost) + '"></div>' +
+      (d.kind === "child"
+        ? '<div class="field"><span class="field-label">' + esc(t("tasks.assign")) + "</span>" +
+          '<div class="seg mb">' +
+            '<button type="button" class="' + (d.assign === "all" ? "on" : "") + '" data-act="p.rewardAssign" data-mode="all">' +
+              esc(t("tasks.assignAll")) + "</button>" +
+            '<button type="button" class="' + (d.assign === "some" ? "on" : "") + '" data-act="p.rewardAssign" data-mode="some">' +
+              esc(t("tasks.assignSome")) + "</button>" +
+          "</div>" +
+          (d.assign === "some" ? '<div class="chips">' + s.children.map(function (c) {
+            var on = (d.assignIds || []).indexOf(c.id) !== -1;
+            return '<button type="button" class="chip' + (on ? " on" : "") + '" data-act="p.rewardChild" data-id="' + c.id + '">' +
+              esc(c.name) + "</button>";
+          }).join("") + "</div>" : "") + "</div>"
+        : "") +
+      '<label class="row tight"><input type="checkbox" id="rActive" style="width:auto" ' + (d.active ? "checked" : "") + "> " +
+        esc(t("tasks.active")) + "</label>" +
+      '<div class="row gap mt">' +
+        (d.id ? '<button type="button" class="btn danger small" data-act="p.rewardDelete" data-id="' + d.id + '">🗑️</button>' : "") +
+        '<button class="btn grow" type="submit">' + esc(t("common.save")) + "</button>" +
+      "</div></form>";
+  }
+
+  function captureReward() {
+    var v = function (id) { var n = U.el("#" + id); return n ? n.value : null; };
+    if (v("rTitle") !== null) {
+      rewardDraft.title = v("rTitle").trim();
+      if (rewardDraft.titleKey && rewardDraft.title !== t(rewardDraft.titleKey)) rewardDraft.titleKey = "";
+    }
+    if (v("rCost") !== null) rewardDraft.cost = S.num(v("rCost"));
+    var a = U.el("#rActive");
+    if (a) rewardDraft.active = a.checked;
+  }
+  function redrawRewardEditor() {
+    captureReward();
+    var body = U.el(".modal-body");
+    if (body) body.innerHTML = rewardEditorBody();
   }
 
   /* ================= kids ================= */
@@ -372,8 +530,10 @@
               return "<li>" + (ordered ? '<span class="rank-badge">' + (i + 1) + "</span>" : "") +
                 '<div class="grow"><div class="title" style="white-space:pre-wrap">' + U.trHtml(it, "text") + "</div>" +
                 '<div class="sub">' + esc(U.fmtDate(it.ts)) + "</div></div>" +
-                (ordered ? '<button class="icon-btn" data-act="p.itemMove" data-id="' + child.id + '" data-field="' + field +
+                (ordered && i > 0 ? '<button class="icon-btn" data-act="p.itemMove" data-id="' + child.id + '" data-field="' + field +
                   '" data-item="' + it.id + '" data-dir="-1" aria-label="' + esc(t("kids.moveUp")) + '">↑</button>' : "") +
+                '<button class="icon-btn" data-act="p.itemEdit" data-id="' + child.id + '" data-field="' + field +
+                  '" data-item="' + it.id + '">✏️</button>' +
                 '<button class="icon-btn" data-act="p.itemRemove" data-id="' + child.id + '" data-field="' + field +
                   '" data-item="' + it.id + '">🗑️</button></li>';
             }).join("") + "</ul>"
@@ -424,18 +584,33 @@
     if (!pending.length) return html + U.emptyState(t("appr.empty"), "✅") + "</div>";
 
     html += '<div class="card flush"><ul class="list">' + pending.map(function (cl) {
-      var c = S.child(cl.childId), task = S.task(cl.taskId);
-      if (!c || !task) return "";
+      var c = S.child(cl.childId);
+      if (!c) return "";
+      var isReward = cl.kind === "reward";
+      var item = isReward ? S.reward(cl.rewardId) : S.task(cl.taskId);
+      if (!item) return "";
+      var cost = isReward ? S.num(item.cost) : 0;
+      var afford = !isReward || S.balance(c.id) >= cost;
+
+      var value = isReward
+        ? U.points(-cost) + ' <small>' + esc(t("rewards.balanceAfter", { n: U.iso(S.balance(c.id) - cost) })) + "</small>"
+        : (item.scope !== "group" ? U.points(item.onDoneSelf) : "") +
+          (item.scope !== "personal" ? " <small>" + esc(t("tasks.groupPts")) + "</small> " + U.points(item.onDoneGroup) : "");
+
       return "<li>" + U.avatar(c.avatar, 40) +
-        '<div class="grow"><div class="title">' + U.taskTitleHtml(task) + "</div>" +
-        '<div class="sub">' + esc(c.name) + " · " + esc(t("appr.claimedAt", { when: U.relTime(cl.ts) })) + "</div>" +
-        '<div class="sub">' + (task.scope !== "group" ? U.points(task.onDoneSelf) : "") +
-          (task.scope !== "personal" ? " <small>" + esc(t("tasks.groupPts")) + "</small> " + U.points(task.onDoneGroup) : "") + "</div></div>" +
+        '<div class="grow"><div class="title">' + (isReward ? (item.icon || "🎁") + " " : "") + U.keyedTitleHtml(item) + "</div>" +
+        '<div class="sub">' + esc(c.name) + " · " +
+          esc(isReward ? t("appr.wantsReward") : t("appr.claimedAt", { when: U.relTime(cl.ts) })) + "</div>" +
+        '<div class="sub">' + value +
+          (afford ? "" : ' <span class="tag bad">' + esc(t("rewards.short", { n: U.iso(cost - S.balance(c.id)) })) + "</span>") +
+        "</div></div>" +
         '<div class="row tight nowrap">' +
-          '<button class="btn small good" data-act="p.claim" data-id="' + cl.id + '" data-ok="1">✓</button>' +
+          '<button class="btn small good" data-act="p.claim" data-id="' + cl.id + '" data-ok="1"' +
+            (afford ? "" : " disabled") + ">✓</button>" +
           '<button class="btn small ghost" data-act="p.claim" data-id="' + cl.id + '" data-ok="0">✗</button>' +
         "</div></li>";
     }).join("") + "</ul></div>";
+
     return html + "</div>";
   }
 
@@ -454,9 +629,10 @@
         '<div class="hint">' + esc(t("tr.userLangHint")) + "</div></div>" +
       '<div class="field"><span class="field-label">' + esc(t("tr.defaultLang")) + "</span>" +
         langChips(s.settings.lang, "p.lang") + "</div>" +
-      '<div class="field"><label for="sGoal">' + esc(t("family.goal")) + "</label>" +
-        '<input id="sGoal" type="number" min="1" value="' + S.num(s.settings.groupGoal) + '">' +
-        '<div class="hint">' + esc(t("family.goalHint")) + "</div></div>" +
+      '<div class="field"><label for="sPrize">' + esc(t("family.weeklyPrize")) + "</label>" +
+        '<input id="sPrize" type="text" value="' + esc(s.settings.weeklyPrize || "") +
+        '" placeholder="' + esc(t("movie.prizeDefault")) + '">' +
+        '<div class="hint">' + esc(t("family.weeklyPrizeHint")) + "</div></div>" +
       '<div class="grid-2">' +
         '<div class="field"><label for="sWeek">' + esc(t("family.weekStart")) + "</label><select id=\"sWeek\">" +
           [0, 1, 2, 3, 4, 5, 6].map(function (d) {
@@ -486,16 +662,9 @@
         return "<li><span class=\"rank-badge\">" + c.icon + "</span>" +
           '<div class="grow"><div class="title">' + U.categoryNameHtml(c) + "</div>" +
           '<div class="sub">' + s.tasks.filter(function (t2) { return t2.categoryId === c.id; }).length + " " + esc(t("tasks.title")) + "</div></div>" +
+          '<button class="icon-btn" data-act="p.catEdit" data-id="' + c.id + '">✏️</button>' +
           '<button class="icon-btn" data-act="p.catDelete" data-id="' + c.id + '">🗑️</button></li>';
       }).join("") + "</ul></div>";
-
-    html += '<div class="section-title">' + esc(t("outing.history")) + "</div>" +
-      '<div class="card">' + (s.outings.length
-        ? s.outings.map(function (o) {
-            return '<div class="kv"><span class="k">' + esc(U.fmtDate(o.ts)) + "</span><span>" +
-              U.trHtml(o, "label") + " · " + esc(nameOf(o.chooserId)) + "</span></div>";
-          }).join("")
-        : '<p class="muted">' + esc(t("outing.empty")) + "</p>") + "</div>";
 
     html += translationCard();
 
@@ -675,6 +844,23 @@
     input.value = "";
     global.App.refresh();
   });
+  U.on("p.itemEdit", function (d) {
+    var c = S.child(d.id);
+    var item = (c[d.field] || []).filter(function (i) { return i.id === d.item; })[0];
+    if (!item) return;
+    U.modal(t("common.edit"),
+      '<form data-act="p.itemSave" data-id="' + d.id + '" data-field="' + d.field + '" data-item="' + d.item + '">' +
+        '<div class="field"><textarea name="text">' + esc(item.text) + "</textarea></div>" +
+        '<button class="btn block" type="submit">' + esc(t("common.save")) + "</button></form>");
+  });
+  U.on("p.itemSave", function (d, form) {
+    var text = form.querySelector('[name="text"]').value.trim();
+    if (!text) return U.toast(t("common.required"), "bad");
+    S.updateListItem(d.id, d.field, d.item, text);
+    U.closeModal();
+    U.toast(t("common.saved"), "good");
+    global.App.refresh();
+  });
   U.on("p.itemRemove", function (d) {
     S.removeListItem(d.id, d.field, d.item);
     global.App.refresh();
@@ -684,18 +870,115 @@
     global.App.refresh();
   });
 
+  U.on("p.rewardNew", function () { rewardEditor(null); });
+  U.on("p.rewardEdit", function (d) { rewardEditor(S.reward(d.id)); });
+  U.on("p.rewardKind", function (d) { rewardDraft.kind = d.kind; redrawRewardEditor(); });
+  U.on("p.rewardAssign", function (d) { rewardDraft.assign = d.mode; redrawRewardEditor(); });
+  U.on("p.rewardIcon", function (d) { rewardDraft.icon = d.icon; redrawRewardEditor(); });
+  U.on("p.rewardChild", function (d) {
+    captureReward();
+    var ids = rewardDraft.assignIds || [];
+    var i = ids.indexOf(d.id);
+    if (i === -1) ids.push(d.id); else ids.splice(i, 1);
+    rewardDraft.assignIds = ids;
+    redrawRewardEditor();
+  });
+  U.on("p.rewardSave", function () {
+    captureReward();
+    if (!rewardDraft.title) return U.toast(t("common.required"), "bad");
+    if (rewardDraft.assign === "some" && !(rewardDraft.assignIds || []).length) rewardDraft.assign = "all";
+    if (rewardDraft.titleKey && rewardDraft.title !== t(rewardDraft.titleKey)) rewardDraft.titleKey = "";
+    if (rewardDraft.titleKey) rewardDraft.title = "";
+    S.saveReward(rewardDraft);
+    U.closeModal();
+    U.toast(t("common.saved"), "good");
+    global.App.refresh();
+  });
+  U.on("p.rewardDelete", function (d) {
+    U.confirmDialog(t("rewards.deleteConfirm"), function () {
+      S.deleteReward(d.id);
+      U.closeModal();
+      global.App.refresh();
+    });
+  });
+
+  /* Handing over a reward: family ones name the chooser, child ones ask which
+     child is spending their points. */
+  U.on("p.giveReward", function (d) {
+    var r = S.reward(d.id);
+    if (!r) return;
+    if (r.kind === "family") return familyRedeemModal(r);
+    var kids = S.get().children.filter(function (c) {
+      return r.assign === "all" || (r.assignIds || []).indexOf(c.id) !== -1;
+    });
+    if (!kids.length) return U.toast(t("common.empty"), "bad");
+    U.modal(U.keyedTitle(r),
+      '<p class="lead">' + esc(t("rewards.cost")) + " " + S.num(r.cost) + " " + esc(t("common.points")) + "</p>" +
+      '<div class="kid-grid">' + kids.map(function (c) {
+        var left = S.balance(c.id) - S.num(r.cost);
+        return '<button class="kid-card" data-act="p.giveRewardTo" data-reward="' + r.id + '" data-id="' + c.id + '"' +
+          (left < 0 ? " disabled" : "") + ">" +
+          U.avatar(c.avatar, 52) + '<span class="nm">' + esc(c.name) + "</span>" +
+          '<span class="tag">' + (left < 0 ? esc(t("rewards.short", { n: U.iso(-left) }))
+                                           : esc(t("rewards.balanceAfter", { n: U.iso(left) }))) + "</span></button>";
+      }).join("") + "</div>");
+  });
+  U.on("p.giveRewardTo", function (d) {
+    var r = S.reward(d.reward);
+    var c = S.child(d.id);
+    if (!S.redeem(r.id, c.id, "", me().id)) return U.toast(t("rewards.tooExpensive", { name: c.name }), "bad");
+    U.closeModal();
+    U.toast(t("rewards.redeemed", { name: U.keyedTitle(r), n: U.iso(S.num(r.cost)) }), "good");
+    global.App.refresh();
+  });
+
+  U.on("p.redeemFamily", function () {
+    var gp = S.goalProgress();
+    if (!gp.reached) return U.toast(t("rewards.short", { n: U.iso(gp.missing) }), "bad");
+    if (gp.unlocked.length === 1) return familyRedeemModal(gp.unlocked[0]);
+    U.modal(t("rewards.pick"),
+      '<div class="stack">' + gp.unlocked.map(function (r) {
+        return '<button class="btn ghost block" data-act="p.giveReward" data-id="' + r.id + '">' +
+          (r.icon || "🎁") + " " + esc(U.keyedTitle(r)) + " · " + S.num(r.cost) + "</button>";
+      }).join("") + "</div>");
+  });
+
+  function familyRedeemModal(r) {
+    var top = S.topScorer();
+    if (!top) return U.toast(t("common.empty"), "bad");
+    var wishes = top.child.outings || [];
+    U.modal(U.keyedTitle(r),
+      '<div class="center">' + U.avatar(top.child.avatar, 64) + "</div>" +
+      '<p class="lead center">' + esc(t("rewards.chooser", { name: top.child.name })) + "</p>" +
+      '<form data-act="p.redeemSave" data-reward="' + r.id + '" data-id="' + top.child.id + '">' +
+        (wishes.length
+          ? '<div class="field"><span class="field-label">' + esc(t("kids.outings")) + "</span>" +
+            '<div class="chips">' + wishes.map(function (w) {
+              return '<button type="button" class="chip" data-act="p.pickWish" data-text="' + esc(w.text) + '">' +
+                esc(U.trValue(w, "text")) + "</button>";
+            }).join("") + "</div></div>"
+          : "") +
+        '<div class="field"><label for="ouName">' + esc(t("rewards.detail")) + "</label>" +
+          '<input id="ouName" type="text">' +
+          '<div class="hint">' + esc(t("rewards.detailHint")) + "</div></div>" +
+        '<button class="btn block" type="submit">' + esc(t("rewards.redeem")) + " · " + S.num(r.cost) + "</button>" +
+      "</form>");
+  }
+
   U.on("p.claim", function (d) {
-    S.decideClaim(d.id, d.ok === "1", me().id);
-    U.toast(d.ok === "1" ? t("appr.approved") : t("appr.rejected"), d.ok === "1" ? "good" : "");
+    var approve = d.ok === "1";
+    var decided = S.decideClaim(d.id, approve, me().id);
+    if (!decided && approve) return U.toast(t("rewards.tooExpensive", { name: "" }).trim(), "bad");
+    U.toast(approve ? t("appr.approved") : t("appr.rejected"), approve ? "good" : "");
     global.App.refresh();
   });
 
   U.on("p.movie", function () {
     var winner = S.weekWinner();
     if (!winner) return U.toast(t("movie.noWinner"), "bad");
-    U.modal(t("movie.title"),
+    U.modal(weeklyPrize(),
       '<div class="center">' + U.avatar(winner.child.avatar, 64) + "</div>" +
-      '<p class="lead center">' + esc(t("movie.winner", { name: winner.child.name })) + "</p>" +
+      '<p class="lead center">' + esc(winner.child.name) + " · " + esc(weeklyPrize()) + "</p>" +
       '<form data-act="p.movieSave" data-id="' + winner.child.id + '">' +
         '<div class="field"><label for="mvName">' + esc(t("movie.movieName")) + "</label>" +
           '<input id="mvName" type="text"></div>' +
@@ -713,35 +996,13 @@
     global.App.refresh();
   });
 
-  U.on("p.redeem", function () {
-    var gp = S.goalProgress();
-    if (!gp.reached) return U.toast(t("outing.needMore", { n: U.iso(gp.missing) }), "bad");
-    var top = S.topScorer();
-    if (!top) return;
-    var wishes = top.child.outings || [];
-    U.modal(t("outing.title"),
-      '<div class="center">' + U.avatar(top.child.avatar, 64) + "</div>" +
-      '<p class="lead center">' + esc(t("outing.chooser", { name: top.child.name })) + "</p>" +
-      '<form data-act="p.redeemSave" data-id="' + top.child.id + '">' +
-        (wishes.length
-          ? '<div class="field"><span class="field-label">' + esc(t("kids.outings")) + "</span>" +
-            '<div class="chips">' + wishes.map(function (w) {
-              return '<button type="button" class="chip" data-act="p.pickWish" data-text="' + esc(w.text) + '">' + esc(w.text) + "</button>";
-            }).join("") + "</div></div>"
-          : '<p class="muted">' + esc(t("outing.noWishes")) + "</p>") +
-        '<div class="field"><label for="ouName">' + esc(t("outing.pick")) + "</label>" +
-          '<input id="ouName" type="text"></div>' +
-        '<button class="btn block" type="submit">' + esc(t("dash.redeem")) + "</button>" +
-      "</form>");
-  });
   U.on("p.pickWish", function (d) { U.el("#ouName").value = d.text; });
   U.on("p.redeemSave", function (d, form) {
-    var label = U.el("#ouName", form).value.trim();
-    if (!label) return U.toast(t("common.required"), "bad");
-    var goal = S.goalProgress().goal;
-    if (!S.redeemOuting(d.id, label, "", me().id)) return U.toast(t("outing.needMore", { n: U.iso(S.goalProgress().missing) }), "bad");
+    var r = S.reward(d.reward);
+    var detail = U.el("#ouName", form).value.trim();
+    if (!S.redeem(r.id, d.id, detail, me().id)) return U.toast(t("rewards.groupShort"), "bad");
     U.closeModal();
-    U.toast(t("outing.redeemed", { n: U.iso(goal) }), "good");
+    U.toast(t("rewards.redeemed", { name: detail || U.keyedTitle(r), n: U.iso(S.num(r.cost)) }), "good");
     global.App.refresh();
   });
 
@@ -776,7 +1037,7 @@
   U.on("p.settingsSave", function (d, form) {
     var s = S.get();
     s.settings.familyName = U.el("#sName", form).value.trim();
-    s.settings.groupGoal = Math.max(1, S.num(U.el("#sGoal", form).value));
+    s.settings.weeklyPrize = U.el("#sPrize", form).value.trim();
     s.settings.weekStart = S.num(U.el("#sWeek", form).value);
     s.settings.movieDay = S.num(U.el("#sMovie", form).value);
     S.save();
@@ -854,9 +1115,25 @@
   U.on("p.catSave", function (d, form) {
     var name = U.el("#ncName", form).value.trim();
     if (!name) return U.toast(t("common.required"), "bad");
-    S.addCategory(name, catIcon);
+    if (d.id) S.saveCategory(d.id, name, catIcon); else S.addCategory(name, catIcon);
     U.closeModal();
+    U.toast(t("common.saved"), "good");
     global.App.refresh();
+  });
+  U.on("p.catEdit", function (d) {
+    var cat = S.category(d.id);
+    if (!cat) return;
+    catIcon = cat.icon;
+    U.modal(t("family.editCategory"),
+      '<form data-act="p.catSave" data-id="' + cat.id + '">' +
+        '<div class="field"><label for="ncName">' + esc(t("family.categoryName")) + "</label>" +
+          '<input id="ncName" type="text" value="' + esc(U.categoryName(cat)) + '"></div>' +
+        '<div class="field"><span class="field-label">' + esc(t("family.icon")) + "</span>" +
+          '<div class="chips">' + global.AVATARS.icons.map(function (ic) {
+            return '<button type="button" class="chip' + (ic === cat.icon ? " on" : "") +
+              '" data-act="p.catIcon" data-icon="' + ic + '">' + ic + "</button>";
+          }).join("") + "</div></div>" +
+        '<button class="btn block" type="submit">' + esc(t("common.save")) + "</button></form>");
   });
   U.on("p.catDelete", function (d) {
     var used = S.get().tasks.some(function (t2) { return t2.categoryId === d.id; });

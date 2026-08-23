@@ -11,6 +11,7 @@
   var PARENT_TABS = [
     { id: "dashboard", icon: "🏠", key: "nav.dashboard" },
     { id: "tasks", icon: "📋", key: "nav.tasks" },
+    { id: "rewards", icon: "🎁", key: "nav.rewards" },
     { id: "kids", icon: "🧒", key: "nav.kids" },
     { id: "approvals", icon: "✅", key: "nav.approvals" },
     { id: "family", icon: "⚙️", key: "nav.family" }
@@ -18,6 +19,7 @@
   var CHILD_TABS = [
     { id: "me", icon: "⭐", key: "nav.me" },
     { id: "tasks", icon: "📋", key: "nav.tasks" },
+    { id: "rewards", icon: "🎁", key: "nav.rewards" },
     { id: "group", icon: "👨‍👩‍👧", key: "nav.group" },
     { id: "notes", icon: "📝", key: "nav.notes" }
   ];

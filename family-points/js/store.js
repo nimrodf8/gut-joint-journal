@@ -91,6 +91,28 @@
     });
   }
 
+  /* Starting points for the family to edit — a reward list is personal, so
+     these are examples that can be renamed, repriced or deleted outright. */
+  function defaultRewards() {
+    var seeds = [
+      ["reward.screen",    "🎮", "child",  150],
+      ["reward.treat",     "🍦", "child",  100],
+      ["reward.latenight", "🌙", "child",  200],
+      ["reward.dinner",    "🍽️", "child",  250],
+      ["reward.friend",    "🧑‍🤝‍🧑", "child",  400],
+      ["reward.present",   "🎁", "child",  500],
+      ["reward.pizza",     "🍕", "family", 400],
+      ["reward.cinema",    "🎬", "family", 800],
+      ["reward.outing",    "🎡", "family", 1000]
+    ];
+    return seeds.map(function (r) {
+      return {
+        id: uid("rw"), titleKey: r[0], title: "", icon: r[1],
+        kind: r[2], cost: r[3], assign: "all", assignIds: [], active: true
+      };
+    });
+  }
+
   function emptyState(lang) {
     return {
       version: 1,
@@ -108,10 +130,11 @@
       children: [],
       categories: defaultCategories(),
       tasks: [],
+      rewards: [],
       ledger: [],
       claims: [],
       movieNights: [],
-      outings: []
+      redemptions: []
     };
   }
 
@@ -133,7 +156,21 @@
   function migrate(s) {
     if (!s.claims) s.claims = [];
     if (!s.movieNights) s.movieNights = [];
-    if (!s.outings) s.outings = [];
+    if (!s.rewards) s.rewards = defaultRewards();
+    if (!s.redemptions) s.redemptions = [];
+    s.claims.forEach(function (c) { if (!c.kind) c.kind = "task"; });
+    /* Family outings used to be the only reward, driven by one goal number.
+       They become entries in the rewards catalogue so they can be edited. */
+    if (s.outings) {
+      s.outings.forEach(function (o) {
+        s.redemptions.push({
+          id: o.id, ts: o.ts, date: o.date, kind: "family", rewardId: null,
+          title: o.label, cost: o.spent, childId: o.chooserId, by: o.by, note: o.note || "",
+          srcLang: o.srcLang, tr: o.tr
+        });
+      });
+      delete s.outings;
+    }
     if (!s.categories || !s.categories.length) s.categories = defaultCategories();
     if (s.settings && s.settings.movieDay === undefined) s.settings.movieDay = 6;
     if (s.settings && s.settings.weekStart === undefined) s.settings.weekStart = 0;
@@ -173,7 +210,10 @@
 
     var parent = addParentRecord(opts.parent.name, opts.parent.username, opts.parent.password, opts.parent.avatar);
     (opts.children || []).forEach(function (c) { addChild(c, parent.id); });
-    if (opts.seedTasks !== false) state.tasks = defaultTasks();
+    if (opts.seedTasks !== false) {
+      state.tasks = defaultTasks();
+      state.rewards = defaultRewards();
+    }
     save();
     return state;
   }
@@ -309,6 +349,23 @@
     return data;
   }
 
+  function saveCategory(id, name, icon) {
+    var cat = byId(state.categories, id);
+    if (!cat) return null;
+    if (cat.key) {                       // a built-in name becomes a custom one
+      delete cat.key;
+      cat.name = name;
+      stamp(cat, "name");
+    } else if (cat.name !== name) {
+      cat.name = name;
+      delete cat.tr;
+      stamp(cat, "name");
+    }
+    cat.icon = icon;
+    save();
+    return cat;
+  }
+
   function addCategory(name, icon) {
     var cat = stamp({ id: uid("cat"), name: name, icon: icon }, "name");
     state.categories.push(cat);
@@ -326,6 +383,52 @@
       if (t.assign === "all") return true;
       return (t.assignIds || []).indexOf(childId) !== -1;
     });
+  }
+
+  function reward(id) { return byId(state.rewards, id); }
+
+  function saveReward(data) {
+    if (data.title && !data.titleKey) {
+      var previous = data.id ? byId(state.rewards, data.id) : null;
+      if (!previous || previous.title !== data.title) {
+        delete data.tr;
+        stamp(data, "title");
+      }
+    } else {
+      delete data.srcLang;
+      delete data.tr;
+    }
+    data.cost = Math.max(0, num(data.cost));
+    if (data.id) {
+      var r = byId(state.rewards, data.id);
+      if (r) {
+        delete r.tr;
+        Object.keys(data).forEach(function (k) { r[k] = data[k]; });
+      }
+    } else {
+      data.id = uid("rw");
+      state.rewards.push(data);
+    }
+    save();
+    return data;
+  }
+  function deleteReward(id) {
+    state.rewards = state.rewards.filter(function (r) { return r.id !== id; });
+    state.claims = state.claims.filter(function (c) { return c.rewardId !== id; });
+    save();
+  }
+  function rewardsFor(childId, includeInactive) {
+    return state.rewards.filter(function (r) {
+      if (r.kind !== "child") return false;
+      if (!r.active && !includeInactive) return false;
+      if (r.assign === "all") return true;
+      return (r.assignIds || []).indexOf(childId) !== -1;
+    });
+  }
+  function familyRewards(includeInactive) {
+    return state.rewards.filter(function (r) {
+      return r.kind === "family" && (r.active || includeInactive);
+    }).sort(function (a, b) { return num(a.cost) - num(b.cost); });
   }
 
   /* ---------------- points ---------------- */
@@ -451,12 +554,33 @@
     })[0];
     if (open) return open;
     var claim = {
-      id: uid("clm"), childId: childId, taskId: taskId,
+      id: uid("clm"), kind: "task", childId: childId, taskId: taskId, rewardId: null,
       ts: now(), dayKey: dayKey(), status: "pending", decidedBy: null, decidedTs: null
     };
     state.claims.push(claim);
     save();
     return claim;
+  }
+
+  function claimReward(childId, rewardId) {
+    var open = state.claims.filter(function (c) {
+      return c.childId === childId && c.rewardId === rewardId && c.status === "pending";
+    })[0];
+    if (open) return open;
+    var claim = {
+      id: uid("clm"), kind: "reward", childId: childId, taskId: null, rewardId: rewardId,
+      ts: now(), dayKey: dayKey(), status: "pending", decidedBy: null, decidedTs: null
+    };
+    state.claims.push(claim);
+    save();
+    return claim;
+  }
+  function rewardClaimFor(childId, rewardId) {
+    var mine = state.claims.filter(function (c) {
+      return c.childId === childId && c.rewardId === rewardId &&
+             (c.status === "pending" || c.dayKey === dayKey());
+    });
+    return mine[mine.length - 1] || null;
   }
   function pendingClaims() {
     return state.claims.filter(function (c) { return c.status === "pending"; })
@@ -465,10 +589,14 @@
   function decideClaim(claimId, approve, byParentId) {
     var c = byId(state.claims, claimId);
     if (!c || c.status !== "pending") return null;
+    if (approve && c.kind === "reward") {
+      // Points may have been spent since the child asked; do not go negative.
+      if (!redeem(c.rewardId, c.childId, "", byParentId)) return null;
+    }
     c.status = approve ? "approved" : "rejected";
     c.decidedBy = byParentId || null;
     c.decidedTs = now();
-    if (approve) awardTask(c.childId, c.taskId, "done", byParentId);
+    if (approve && c.kind !== "reward") awardTask(c.childId, c.taskId, "done", byParentId);
     save();
     return c;
   }
@@ -483,22 +611,47 @@
 
   /* ---------------- rewards ---------------- */
 
+  /* The group bank aims at the cheapest family reward it cannot afford yet, so
+     the goal moves with the catalogue instead of being one fixed number. */
   function goalProgress() {
     var total = groupTotal();
-    var goal = num(state.settings.groupGoal) || 1000;
-    return { total: total, goal: goal, reached: total >= goal, missing: Math.max(0, goal - total),
-             pct: Math.max(0, Math.min(100, Math.round(total / goal * 100))) };
+    var list = familyRewards();
+    var unlocked = list.filter(function (r) { return num(r.cost) <= total; });
+    var next = list.filter(function (r) { return num(r.cost) > total; })[0] || null;
+    var goal = next ? num(next.cost)
+             : list.length ? num(list[list.length - 1].cost)
+             : num(state.settings.groupGoal) || 1000;
+    return {
+      total: total, goal: goal, next: next, unlocked: unlocked,
+      reached: unlocked.length > 0,
+      missing: Math.max(0, goal - total),
+      pct: goal > 0 ? Math.max(0, Math.min(100, Math.round(total / goal * 100))) : 100
+    };
   }
 
-  function redeemOuting(chooserId, label, note, byParentId) {
-    var goal = num(state.settings.groupGoal) || 1000;
-    if (groupTotal() < goal) return null;   // never let the bank go negative
-    var entry = stamp({
-      id: uid("out"), ts: now(), date: dayKey(),
-      chooserId: chooserId, label: label, note: note || "", spent: goal, by: byParentId || null
-    }, "label");
-    state.outings.unshift(entry);
-    record({ childId: null, taskId: null, kind: "redeem", self: 0, group: -goal, note: label, by: byParentId || null });
+  /* Spending points on a reward. Family rewards come out of the group bank,
+     child rewards out of that child's own balance; neither may go negative. */
+  function redeem(rewardId, childId, note, byParentId) {
+    var r = reward(rewardId);
+    if (!r) return null;
+    var cost = num(r.cost);
+    var family = r.kind === "family";
+    if (family && groupTotal() < cost) return null;
+    if (!family && (!childId || balance(childId) < cost)) return null;
+
+    var entry = {
+      id: uid("red"), ts: now(), date: dayKey(), rewardId: r.id, kind: r.kind,
+      title: r.titleKey ? "" : r.title, titleKey: r.titleKey || "",
+      icon: r.icon, cost: cost, childId: childId || null, note: note || "",
+      by: byParentId || null, srcLang: r.srcLang, tr: r.tr ? clone(r.tr) : undefined
+    };
+    if (entry.note) stamp(entry, "note");
+    state.redemptions.unshift(entry);
+    record({
+      childId: family ? null : childId, taskId: null, kind: "reward",
+      self: family ? 0 : -cost, group: family ? -cost : 0,
+      note: note || "", rewardId: r.id, by: byParentId || null
+    });
     save();
     return entry;
   }
@@ -531,6 +684,19 @@
     save();
     return item;
   }
+  function updateListItem(childId, field, itemId, text) {
+    var c = child(childId);
+    if (!c || !c[field] || !text) return null;
+    var item = byId(c[field], itemId);
+    if (!item || item.text === text) return item;
+    item.text = text;
+    item.editedAt = now();
+    delete item.tr;
+    stamp(item, "text");
+    save();
+    return item;
+  }
+
   function removeListItem(childId, field, itemId) {
     var c = child(childId);
     if (!c || !c[field]) return;
@@ -571,15 +737,19 @@
     setUserLang: setUserLang, addCategory: addCategory, authorLang: authorLang,
     setChildPin: setChildPin, child: child,
     saveTask: saveTask, deleteTask: deleteTask, tasksForChild: tasksForChild, task: task,
-    category: category,
+    saveReward: saveReward, deleteReward: deleteReward, reward: reward,
+    rewardsFor: rewardsFor, familyRewards: familyRewards, defaultRewards: defaultRewards,
+    category: category, saveCategory: saveCategory,
     awardTask: awardTask, adjust: adjust, record: record,
     balance: balance, groupTotal: groupTotal, weekEarned: weekEarned, weekRange: weekRange,
     weekWinner: weekWinner, standings: standings, topScorer: topScorer,
     birthdayInfo: birthdayInfo,
     claimTask: claimTask, pendingClaims: pendingClaims, decideClaim: decideClaim, claimFor: claimFor,
-    goalProgress: goalProgress, redeemOuting: redeemOuting,
+    claimReward: claimReward, rewardClaimFor: rewardClaimFor,
+    goalProgress: goalProgress, redeem: redeem,
     recordMovieNight: recordMovieNight, movieNightToday: movieNightToday, isMovieDay: isMovieDay,
-    addListItem: addListItem, removeListItem: removeListItem, moveListItem: moveListItem,
+    addListItem: addListItem, updateListItem: updateListItem,
+    removeListItem: removeListItem, moveListItem: moveListItem,
     setSession: setSession, getSession: getSession, clearSession: clearSession,
     checkSecret: checkSecret, makeSecret: makeSecret,
     uid: uid, now: now, dayKey: dayKey, clone: clone, num: num

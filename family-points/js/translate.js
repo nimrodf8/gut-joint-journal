@@ -137,7 +137,7 @@
     s.tasks.forEach(note);
     s.categories.forEach(note);
     s.ledger.forEach(note);
-    s.outings.forEach(note);
+    s.redemptions.forEach(note);
     // Assume every reader language is also a writing language, so the packs are
     // ready before the first note is typed.
     s.parents.concat(s.children).forEach(function (u) { found[u.lang || s.settings.lang] = true; });

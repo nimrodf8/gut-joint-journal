@@ -12,6 +12,7 @@
     var c = me();
     if (!c) { S.clearSession(); return ""; }
     if (tab === "tasks") return tasksTab(c);
+    if (tab === "rewards") return rewardsTab(c);
     if (tab === "group") return groupTab(c);
     if (tab === "notes") return notesTab(c);
     return meTab(c);
@@ -49,8 +50,9 @@
     var winner = S.weekWinner();
     if (winner && winner.child.id === c.id && S.isMovieDay()) {
       var todays = S.movieNightToday();
-      html += '<div class="card good"><div class="eyebrow">' + esc(t("movie.title")) + "</div>" +
-        "<p><strong>🍿 " + esc(todays ? todays.movie : t("movie.winner", { name: c.name })) + "</strong></p></div>";
+      var prize = (S.get().settings.weeklyPrize || "").trim() || t("movie.prizeDefault");
+      html += '<div class="card good"><div class="eyebrow">' + esc(prize) + "</div>" +
+        "<p><strong>🍿 " + esc(todays ? todays.movie : prize) + "</strong></p></div>";
     }
 
     html += '<div class="section-title">' + esc(t("dash.activity")) + "</div>" +
@@ -113,6 +115,66 @@
       "</div>";
   }
 
+  /* ================= rewards ================= */
+
+  function rewardsTab(c) {
+    var balance = S.balance(c.id);
+    var mine = S.rewardsFor(c.id).sort(function (a, b) { return S.num(a.cost) - S.num(b.cost); });
+    var gp = S.goalProgress();
+
+    var html = '<div class="wrap"><h1>' + esc(t("rewards.title")) + "</h1>" +
+      '<div class="card hero center">' +
+        '<div class="score" style="font-size:2.4rem">' + balance + "</div>" +
+        '<small>' + esc(t("common.points")) + "</small></div>";
+
+    html += '<div class="section-title">' + esc(t("rewards.child")) + "</div>";
+    html += mine.length
+      ? '<div class="card flush">' + mine.map(function (r) { return rewardRow(c, r, balance); }).join("") + "</div>"
+      : U.emptyState(t("rewards.noneForChild"), "🎁");
+
+    html += '<div class="section-title">' + esc(t("rewards.family")) + "</div>" +
+      '<div class="card">' +
+        '<div class="row between nowrap"><strong>' + esc(t("dash.groupBank")) + "</strong>" +
+        '<span class="score" style="font-size:1.2rem">' + gp.total + "</span></div>" +
+        U.progressBar(gp.pct) +
+        '<small>' + esc(gp.next
+          ? t("rewards.nextGoal", { name: U.keyedTitle(gp.next) }) + " · " + t("rewards.short", { n: U.iso(gp.missing) })
+          : t("rewards.unlockedCount", { n: U.iso(gp.unlocked.length) })) + "</small>" +
+        (gp.unlocked.length
+          ? '<ul class="list" style="margin-top:8px">' + gp.unlocked.map(function (r) {
+              return "<li><span class=\"rank-badge\">" + (r.icon || "🎁") + "</span>" +
+                '<div class="grow"><div class="title">' + U.keyedTitleHtml(r) + "</div></div>" +
+                '<span class="tag good">' + esc(t("rewards.unlocked")) + "</span></li>";
+            }).join("") + "</ul>"
+          : "") +
+      "</div>";
+
+    return html + "</div>";
+  }
+
+  function rewardRow(c, r, balance) {
+    var cost = S.num(r.cost);
+    var claim = S.rewardClaimFor(c.id, r.id);
+    var short = cost - balance;
+    var status = "";
+    if (claim && claim.status === "pending") status = '<span class="tag">⏳ ' + esc(t("rewards.requested")) + "</span>";
+    else if (claim && claim.status === "approved") status = '<span class="tag good">✓ ' + esc(t("common.done")) + "</span>";
+    else if (claim && claim.status === "rejected") status = '<span class="tag bad">✗ ' + esc(t("appr.rejected")) + "</span>";
+
+    return '<div class="task-row' + (short > 0 ? " paused" : "") + '">' +
+      '<span class="rank-badge" style="font-size:1.1rem">' + (r.icon || "🎁") + "</span>" +
+      '<div class="grow"><div class="title">' + U.keyedTitleHtml(r) + "</div>" +
+        '<div class="sub">' + U.points(-cost) + " · " +
+          esc(short > 0 ? t("rewards.short", { n: U.iso(short) }) : t("rewards.affordable")) + "</div>" +
+        (status ? '<div class="sub">' + status + "</div>" : "") +
+      "</div>" +
+      (claim && claim.status === "pending"
+        ? '<button class="btn small ghost" disabled>⏳</button>'
+        : '<button class="btn small' + (short > 0 ? " ghost" : " good") + '" data-act="c.wantReward" data-id="' + r.id + '"' +
+          (short > 0 ? " disabled" : "") + ">" + esc(t("rewards.want")) + "</button>") +
+      "</div>";
+  }
+
   /* ================= group ================= */
 
   function groupTab(c) {
@@ -128,9 +190,11 @@
         '<div class="tag" style="background:rgba(255,255,255,.2);color:#fff">' + esc(t("dash.goal", { n: U.iso(gp.goal) })) + "</div></div>" +
         U.progressBar(gp.pct) +
         (gp.reached
-          ? "<p>🎉 " + esc(t("dash.goalReached")) + "</p>" +
-            (top ? "<small>" + esc(t("outing.chooser", { name: top.child.id === c.id ? t("common.you") : top.child.name })) + "</small>" : "")
-          : "<small>" + esc(t("outing.needMore", { n: U.iso(gp.missing) })) + "</small>") +
+          ? "<p>🎉 " + esc(t("rewards.unlockedCount", { n: U.iso(gp.unlocked.length) })) + "</p>" +
+            (top ? "<small>" + esc(t("rewards.chooser", { name: top.child.id === c.id ? t("common.you") : top.child.name })) + "</small>" : "")
+          : "<small>" + esc(gp.next
+              ? t("rewards.nextGoal", { name: U.keyedTitle(gp.next) }) + " · " + t("rewards.short", { n: U.iso(gp.missing) })
+              : t("rewards.short", { n: U.iso(gp.missing) })) + "</small>") +
       "</div>";
 
     html += '<div class="section-title">' + esc(t("dash.standings")) + "</div>" +
@@ -151,13 +215,15 @@
           }).join("")
         : '<p class="muted">' + esc(t("movie.empty")) + "</p>") + "</div>";
 
-    html += '<div class="section-title">' + esc(t("outing.history")) + "</div>" +
-      '<div class="card">' + (s.outings.length
-        ? s.outings.slice(0, 8).map(function (o) {
-            return '<div class="kv"><span class="k">' + esc(U.fmtDate(o.ts)) + "</span><span>🎡 " +
-              U.trHtml(o, "label") + " · " + esc(nameOf(o.chooserId)) + "</span></div>";
+    html += '<div class="section-title">' + esc(t("rewards.history")) + "</div>" +
+      '<div class="card">' + (s.redemptions.length
+        ? s.redemptions.slice(0, 8).map(function (r) {
+            return '<div class="kv"><span class="k">' + esc(U.fmtDate(r.ts)) + "</span><span>" +
+              (r.icon || "🎁") + " " + U.keyedTitleHtml(r) +
+              (r.note ? " · " + U.trHtml(r, "note") : "") +
+              (r.childId ? " · " + esc(nameOf(r.childId)) : "") + "</span></div>";
           }).join("")
-        : '<p class="muted">' + esc(t("outing.empty")) + "</p>") + "</div>";
+        : '<p class="muted">' + esc(t("common.empty")) + "</p>") + "</div>";
 
     return html + "</div>";
   }
@@ -192,6 +258,8 @@
                 '<div class="sub">' + esc(U.fmtDate(it.ts)) + "</div></div>" +
                 (ordered && i > 0 ? '<button class="icon-btn" data-act="c.itemMove" data-field="' + field +
                   '" data-item="' + it.id + '" data-dir="-1" aria-label="' + esc(t("kids.moveUp")) + '">↑</button>' : "") +
+                '<button class="icon-btn" data-act="c.itemEdit" data-field="' + field +
+                  '" data-item="' + it.id + '">✏️</button>' +
                 '<button class="icon-btn" data-act="c.itemRemove" data-field="' + field +
                   '" data-item="' + it.id + '">🗑️</button></li>';
             }).join("") + "</ul>"
@@ -213,6 +281,34 @@
     if (!text) return;
     S.addListItem(me().id, d.field, text);
     input.value = "";
+    global.App.refresh();
+  });
+  U.on("c.wantReward", function (d) {
+    var c = me();
+    var r = S.reward(d.id);
+    if (!r) return;
+    if (S.balance(c.id) < S.num(r.cost)) {
+      return U.toast(t("rewards.short", { n: U.iso(S.num(r.cost) - S.balance(c.id)) }), "bad");
+    }
+    S.claimReward(c.id, r.id);
+    U.toast(t("tasks.claimSent"), "good");
+    global.App.refresh();
+  });
+  U.on("c.itemEdit", function (d) {
+    var c = me();
+    var item = (c[d.field] || []).filter(function (i) { return i.id === d.item; })[0];
+    if (!item) return;
+    U.modal(t("common.edit"),
+      '<form data-act="c.itemSave" data-field="' + d.field + '" data-item="' + d.item + '">' +
+        '<div class="field"><textarea name="text">' + esc(item.text) + "</textarea></div>" +
+        '<button class="btn block" type="submit">' + esc(t("common.save")) + "</button></form>");
+  });
+  U.on("c.itemSave", function (d, form) {
+    var text = form.querySelector('[name="text"]').value.trim();
+    if (!text) return U.toast(t("common.required"), "bad");
+    S.updateListItem(me().id, d.field, d.item, text);
+    U.closeModal();
+    U.toast(t("common.saved"), "good");
     global.App.refresh();
   });
   U.on("c.itemRemove", function (d) {

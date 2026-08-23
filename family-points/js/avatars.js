@@ -28,11 +28,15 @@
   var ICONS = ["🧽", "🧺", "📚", "🎲", "🇳🇱", "⭐", "🛏️", "🍽️", "🦷", "🐕",
                "🌱", "🎨", "🎵", "⚽", "🧹", "🚲", "💧", "🧦", "📝", "🧩"];
 
+  var REWARD_ICONS = ["🎁", "🎮", "🍦", "🌙", "🍽️", "🧑‍🤝‍🧑", "🍕", "🎬", "🎡", "🍭",
+                      "🏊", "🎳", "🛝", "🚲", "📱", "🎧", "🧁", "🍿", "🐾", "🏕️",
+                      "🎨", "⚽", "🎯", "🛼", "🧸", "💶"];
+
   function byId(id) {
     var all = KIDS.concat(PARENTS);
     for (var i = 0; i < all.length; i++) if (all[i].id === id) return all[i];
     return KIDS[0];
   }
 
-  global.AVATARS = { kids: KIDS, parents: PARENTS, icons: ICONS, byId: byId };
+  global.AVATARS = { kids: KIDS, parents: PARENTS, icons: ICONS, rewardIcons: REWARD_ICONS, byId: byId };
 })(window);
