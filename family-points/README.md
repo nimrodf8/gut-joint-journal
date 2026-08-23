@@ -1,5 +1,7 @@
 # Family Points
 
+**Live: https://nimrodf8.github.io/gut-joint-journal/family-points/**
+
 Chores, points and family rewards for the kids at home — a single static web app
 with no build step, no server and no account anywhere. Everything lives in the
 browser of the device the family uses.
@@ -10,7 +12,9 @@ the language of whoever reads it.
 
 ## Running it
 
-Open `index.html` in a browser, or serve the folder:
+The published copy is served by this repository's GitHub Pages site straight
+from `main`, so anything merged there is live within a minute. To run it
+yourself, open `index.html` in a browser, or serve the folder:
 
 ```sh
 cd family-points
@@ -176,6 +180,14 @@ the text being translated stays on the device.
   the file — so a family moves between devices even where a page is not allowed
   to start a download.
 - Clearing the browser's site data erases the family. Export first.
+
+**Each device keeps its own copy.** Opening the link on a phone and on a laptop
+gives you two separate families, because the data never leaves the browser it
+was entered in. To put one family on several devices, set it up once, export the
+backup, and restore it on the other devices — *Restore from a backup* sits on
+the very first screen and on the sign-in screen. Points earned afterwards do not
+flow between devices; that needs a shared backend, which this app deliberately
+does not have.
 
 ## Layout
 
