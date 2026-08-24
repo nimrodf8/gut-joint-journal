@@ -605,7 +605,8 @@
 
       return "<li>" + U.avatar(c.avatar, 40) +
         '<div class="grow"><div class="title">' + (isReward ? (item.icon || "🎁") + " " : "") + U.keyedTitleHtml(item) + "</div>" +
-        '<div class="sub">' + U.name(c) + " · " +
+        '<div class="sub" title="' + esc(t("appr.claimedAt", { when: U.fmtDateTime(cl.ts) })) + '">' +
+          U.name(c) + " · " +
           esc(isReward ? t("appr.wantsReward") : t("appr.claimedAt", { when: U.relTime(cl.ts) })) + "</div>" +
         '<div class="sub">' + value +
           (afford ? "" : ' <span class="tag bad">' + esc(t("rewards.short", { n: U.iso(cost - S.balance(c.id)) })) + "</span>") +

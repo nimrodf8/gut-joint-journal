@@ -98,6 +98,10 @@
     "name.writing": "Writing the {lang} name",
     "name.filled": "written",
 
+    "child.readOnly": "You can add to this list. Ask a parent to change or remove anything already on it.",
+    "child.reportedAt": "You reported this on {when} — waiting for a parent to confirm",
+    "child.requestedAt": "You asked for this on {when}",
+
     "sync.title": "One family on every device",
     "sync.hint": "Turn this on and the family lives on a small server instead of only in this browser. Points, tasks and notes reach every phone, tablet and computer within seconds.",
     "sync.off": "Off — this device keeps its own copy",
@@ -463,6 +467,10 @@
     "name.writing": "Je schrijft de {lang} naam",
     "name.filled": "ingevuld",
 
+    "child.readOnly": "Je kunt aan deze lijst toevoegen. Vraag een ouder om iets te wijzigen of weg te halen.",
+    "child.reportedAt": "Je hebt dit gemeld op {when} — een ouder moet het nog bevestigen",
+    "child.requestedAt": "Je hebt hierom gevraagd op {when}",
+
     "sync.title": "Eén gezin op elk apparaat",
     "sync.hint": "Zet dit aan en het gezin staat op een kleine server in plaats van alleen in deze browser. Punten, taken en notities bereiken binnen enkele seconden elke telefoon, tablet en computer.",
     "sync.off": "Uit — dit apparaat houdt zijn eigen kopie",
@@ -827,6 +835,10 @@
     "name.hint": "שמות אף פעם לא מתורגמים. בחרו שפה וכתבו את השם כפי שהוא צריך להיראות בה; שפה שתשאירו ריקה תציג את השם הראשון שכתבתם.",
     "name.writing": "כותבים את השם ב{lang}",
     "name.filled": "מולא",
+
+    "child.readOnly": "אפשר להוסיף לרשימה. כדי לשנות או להסיר משהו שכבר רשום, בקשו מהורה.",
+    "child.reportedAt": "דיווחתם על זה ב־{when} — ממתין לאישור הורה",
+    "child.requestedAt": "ביקשתם את זה ב־{when}",
 
     "sync.title": "משפחה אחת בכל המכשירים",
     "sync.hint": "כשמפעילים, המשפחה נשמרת בשרת קטן ולא רק בדפדפן הזה. נקודות, משימות והערות מגיעות לכל טלפון, טאבלט ומחשב תוך שניות.",

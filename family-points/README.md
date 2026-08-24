@@ -174,6 +174,12 @@ entered.
 
 **Children** (tap their character, plus a PIN if one was set)
 
+A child can **add and ask, never change**. They add notes, birthday wishes and
+outing wishes, and they ask — for a reward, or to say a chore is done — but they
+cannot edit or delete anything already on a list, and nothing they do moves a
+single point on its own. Every request waits for a parent, and hovering a
+pending mark says exactly when the child reported it, on both sides.
+
 - Me — their points, rank, birthday countdown and recent movement
 - Tasks — everything assigned to them, with an **I did it** button that sends a
   report to the parents rather than awarding points directly
@@ -181,7 +187,8 @@ entered.
   much, and an **I want this** button that asks a parent
 - Group — the shared bank, the standings and the history of movie nights and
   outings
-- Notes — their own notebook, birthday wish list and outing wishes
+- Notes — their own notebook, birthday wish list and outing wishes; they add to
+  these, and a parent edits or removes
 
 ## Rewards
 
@@ -272,8 +279,10 @@ runs straight from `file://` without a server.
 - **הורים** נכנסים עם שם משתמש וסיסמה ומקבלים גישת אדמין: הקמת משימות לפי נושא,
   שיוך לכל הילדים או לילד מסוים, זיכוי וקיזוז נקודות, ואישור דיווחים.
 - **ילדים** נכנסים בלחיצה על הדמות שלהם (ועם קוד סודי אם הוגדר), רואים את החשבון
-  האישי ואת החשבון הקבוצתי, מדווחים "עשיתי!" לאישור הורה, וכותבים הערות,
-  רעיונות למתנות יום הולדת והעדפות לבילוי.
+  האישי ואת החשבון הקבוצתי, וכותבים הערות, רעיונות למתנות יום הולדת והעדפות
+  לבילוי. **הם מוסיפים ומבקשים, לא משנים**: אי אפשר לערוך או למחוק מה שכבר רשום,
+  ושום פעולה שלהם לא מזיזה נקודה בעצמה. "עשיתי!" ובקשת פרס ממתינות לאישור הורה,
+  וריחוף מעל הסימון מראה מתי בדיוק הילד/ה דיווחו.
 - כל ילד מתחיל עם **500 נקודות**. לכל משימה מוגדר ניקוד כשמבוצעת וניקוד כשלא
   מבוצעת — כך שאפשר גם משימה ניטרלית שנותנת 0 בביצוע ומקזזת כשלא בוצעה.
 - **הכול ניתן לעריכה**: המשימות, הנושאים והפרסים שמגיעים עם האפליקציה הם רק

@@ -96,7 +96,10 @@
   function taskRow(c, task) {
     var claim = S.claimFor(c.id, task.id);
     var status = "";
-    if (claim && claim.status === "pending") status = '<span class="tag">⏳ ' + esc(t("tasks.claimed")) + "</span>";
+    if (claim && claim.status === "pending") {
+      status = '<span class="tag" title="' + esc(t("child.reportedAt", { when: U.fmtDateTime(claim.ts) })) +
+        '">⏳ ' + esc(t("tasks.claimed")) + "</span>";
+    }
     else if (claim && claim.status === "approved") status = '<span class="tag good">✓ ' + esc(t("tasks.doneToday")) + "</span>";
     else if (claim && claim.status === "rejected") status = '<span class="tag bad">✗ ' + esc(t("appr.rejected")) + "</span>";
 
@@ -157,7 +160,10 @@
     var claim = S.rewardClaimFor(c.id, r.id);
     var short = cost - balance;
     var status = "";
-    if (claim && claim.status === "pending") status = '<span class="tag">⏳ ' + esc(t("rewards.requested")) + "</span>";
+    if (claim && claim.status === "pending") {
+      status = '<span class="tag" title="' + esc(t("child.requestedAt", { when: U.fmtDateTime(claim.ts) })) +
+        '">⏳ ' + esc(t("rewards.requested")) + "</span>";
+    }
     else if (claim && claim.status === "approved") status = '<span class="tag good">✓ ' + esc(t("common.done")) + "</span>";
     else if (claim && claim.status === "rejected") status = '<span class="tag bad">✗ ' + esc(t("appr.rejected")) + "</span>";
 
@@ -255,15 +261,10 @@
           ? '<ul class="list" style="margin-top:10px">' + items.map(function (it, i) {
               return "<li>" + (ordered ? '<span class="rank-badge">' + (i + 1) + "</span>" : "") +
                 '<div class="grow"><div class="title" style="white-space:pre-wrap">' + U.trHtml(it, "text") + "</div>" +
-                '<div class="sub">' + esc(U.fmtDate(it.ts)) + "</div></div>" +
-                (ordered && i > 0 ? '<button class="icon-btn" data-act="c.itemMove" data-field="' + field +
-                  '" data-item="' + it.id + '" data-dir="-1" aria-label="' + esc(t("kids.moveUp")) + '">↑</button>' : "") +
-                '<button class="icon-btn" data-act="c.itemEdit" data-field="' + field +
-                  '" data-item="' + it.id + '">✏️</button>' +
-                '<button class="icon-btn" data-act="c.itemRemove" data-field="' + field +
-                  '" data-item="' + it.id + '">🗑️</button></li>';
+                '<div class="sub">' + esc(U.fmtDate(it.ts)) + "</div></div></li>";
             }).join("") + "</ul>"
           : '<p class="muted">' + esc(t("common.empty")) + "</p>") +
+        '<div class="hint">' + esc(t("child.readOnly")) + "</div>" +
       "</div>";
   }
 
@@ -292,31 +293,6 @@
     }
     S.claimReward(c.id, r.id);
     U.toast(t("tasks.claimSent"), "good");
-    global.App.refresh();
-  });
-  U.on("c.itemEdit", function (d) {
-    var c = me();
-    var item = (c[d.field] || []).filter(function (i) { return i.id === d.item; })[0];
-    if (!item) return;
-    U.modal(t("common.edit"),
-      '<form data-act="c.itemSave" data-field="' + d.field + '" data-item="' + d.item + '">' +
-        '<div class="field"><textarea name="text">' + esc(item.text) + "</textarea></div>" +
-        '<button class="btn block" type="submit">' + esc(t("common.save")) + "</button></form>");
-  });
-  U.on("c.itemSave", function (d, form) {
-    var text = form.querySelector('[name="text"]').value.trim();
-    if (!text) return U.toast(t("common.required"), "bad");
-    S.updateListItem(me().id, d.field, d.item, text);
-    U.closeModal();
-    U.toast(t("common.saved"), "good");
-    global.App.refresh();
-  });
-  U.on("c.itemRemove", function (d) {
-    S.removeListItem(me().id, d.field, d.item);
-    global.App.refresh();
-  });
-  U.on("c.itemMove", function (d) {
-    S.moveListItem(me().id, d.field, d.item, S.num(d.dir));
     global.App.refresh();
   });
 
