@@ -63,14 +63,14 @@
     var who = "";
     if (screen === "parent") {
       var p = S.parent(session().id);
-      if (p) who = U.avatar(p.avatar, 34) ;
+      if (p) who = U.avatar(p.avatar, 34);
     } else if (screen === "child") {
       var c = S.child(session().id);
       if (c) who = U.avatar(c.avatar, 34);
     }
-    var title = s && s.settings.familyName ? s.settings.familyName : t("app.name");
-    var sub = screen === "parent" ? (S.parent(session().id) || {}).name
-            : screen === "child" ? (S.child(session().id) || {}).name
+    var title = (s && S.familyName()) || t("app.name");
+    var sub = screen === "parent" ? S.nameOf(S.parent(session().id))
+            : screen === "child" ? S.nameOf(S.child(session().id))
             : t("app.tagline");
 
     return '<div class="wrap">' +
@@ -157,7 +157,8 @@
     var text = box.value;
     U.toast(t("sync.syncing"));
     global.Sync.peek(text).then(function (res) {
-      var name = (res && res.doc && res.doc.settings && res.doc.settings.familyName) || t("app.name");
+      var set = (res && res.doc && res.doc.settings) || {};
+      var name = (set.familyNames && set.familyNames[global.I18N.lang]) || set.familyName || t("app.name");
       U.confirmDialog(t("sync.joinReplace", { name: name }), function () {
         global.Sync.join(text).then(function () {
           applyUserLang();

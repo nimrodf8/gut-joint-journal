@@ -49,6 +49,51 @@
     }).join("") + "</div>";
   }
 
+  /* Names go straight to the screen — escaped, never translated. */
+  function name(entity) { return esc(global.Store.nameOf(entity)); }
+  function familyName() { return esc(global.Store.familyName()); }
+
+  /* The row of languages above a name field: pick one, write the name the way
+     it belongs in that language. A dot marks the ones already written. */
+  function nameLangChips(names, action, active, field) {
+    return global.I18N.langs.map(function (l) {
+      var written = names && names[l.code];
+      return '<button type="button" class="chip' + (l.code === active ? " on" : "") +
+        '" data-act="' + action + '" data-lang="' + l.code + '" data-field="' + (field || "") +
+        '" title="' + esc(written ? t("name.filled") : t("name.perLang")) + '">' +
+        l.flag + " " + esc(l.label) + (written ? " ✓" : "") + "</button>";
+    }).join("");
+  }
+
+  /* A name input with the language row above it. Switching language keeps what
+     was typed for the language you are leaving, so a family can write its name
+     once per language without losing any of them. */
+  function nameField(opts) {
+    return '<div class="field"><label for="' + opts.field + '">' + esc(opts.label) + "</label>" +
+      '<div class="chips mb" id="nameLangs-' + opts.field + '">' +
+        nameLangChips(opts.names, opts.action, opts.lang, opts.field) + "</div>" +
+      '<input id="' + opts.field + '" type="text" value="' +
+        esc((opts.names && opts.names[opts.lang]) || "") + '">' +
+      '<div class="hint">' + esc(t("name.hint")) + "</div></div>";
+  }
+
+  /* Moves what is typed into the language being left, then shows the language
+     being entered. Returns the language now in the box. */
+  function switchNameLang(field, names, from, to) {
+    var input = el("#" + field);
+    if (input) {
+      var typed = input.value.trim();
+      if (typed) names[from] = typed; else delete names[from];
+      input.value = names[to] || "";
+    }
+    var row = el("#nameLangs-" + field);
+    if (row && input) {
+      row.innerHTML = nameLangChips(names, row.querySelector("[data-act]").getAttribute("data-act"), to, field);
+      input.focus();
+    }
+    return to;
+  }
+
   function points(n, opts) {
     n = global.Store.num(n);
     var cls = n > 0 ? "pos" : n < 0 ? "neg" : "zero";
@@ -196,6 +241,8 @@
 
   global.UI = {
     esc: esc, el: el, els: els, on: on, avatar: avatar, avatarPicker: avatarPicker,
+    name: name, familyName: familyName, nameLangChips: nameLangChips,
+    nameField: nameField, switchNameLang: switchNameLang,
     iso: iso, signed: signed,
     points: points, fmtDate: fmtDate, fmtDateTime: fmtDateTime, weekdayName: weekdayName,
     relTime: relTime, categoryName: categoryName, categoryNameHtml: categoryNameHtml,

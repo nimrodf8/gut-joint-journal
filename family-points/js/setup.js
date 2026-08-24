@@ -13,11 +13,11 @@
 
   function reset() {
     draft = {
-      familyName: "",
+      familyNames: {},
       lang: global.I18N.lang,
       startPoints: global.Store.START_POINTS,
-      parent: { name: "", username: "", password: "", password2: "", avatar: "p1" },
-      childForm: { name: "", avatar: "k1", birthday: "", pin: "" },
+      parent: { names: {}, nameLang: global.I18N.lang, username: "", password: "", password2: "", avatar: "p1" },
+      childForm: { names: {}, nameLang: global.I18N.lang, avatar: "k1", birthday: "", pin: "" },
       children: []
     };
     step = 1;
@@ -49,13 +49,18 @@
   function stepFamily() {
     return "<h1>" + esc(t("setup.welcome")) + "</h1>" +
       '<p class="lead">' + esc(t("setup.intro")) + "</p>" +
-      '<div class="field"><label for="fName">' + esc(t("setup.familyName")) + "</label>" +
-        '<input id="fName" type="text" value="' + esc(draft.familyName) + '" placeholder="' + esc(t("setup.familyNamePh")) + '"></div>' +
       '<div class="field"><span class="field-label">' + esc(t("common.language")) + "</span>" +
         '<div class="chips">' + global.I18N.langs.map(function (l) {
+          var written = draft.familyNames[l.code];
           return '<button type="button" class="chip' + (l.code === draft.lang ? " on" : "") +
-            '" data-act="setup.lang" data-lang="' + l.code + '">' + l.flag + " " + esc(l.label) + "</button>";
+            '" data-act="setup.lang" data-lang="' + l.code + '">' + l.flag + " " + esc(l.label) +
+            (written ? " ✓" : "") + "</button>";
         }).join("") + "</div></div>" +
+      '<div class="field"><label for="fName">' + esc(t("setup.familyName")) + " · " +
+        esc(t("name.writing", { lang: t("lang." + draft.lang) })) + "</label>" +
+        '<input id="fName" type="text" value="' + esc(draft.familyNames[draft.lang] || "") +
+        '" placeholder="' + esc(t("setup.familyNamePh")) + '">' +
+        '<div class="hint">' + esc(t("name.hint")) + "</div></div>" +
       '<button class="btn block mt" data-act="setup.next">' + esc(t("common.next")) + " →</button>" +
       '<hr style="border:none;border-top:1px solid var(--line);margin:18px 0">' +
       '<p class="hint" style="margin-top:0">' + esc(t("setup.haveFamily")) + "</p>" +
@@ -67,8 +72,8 @@
     var p = draft.parent;
     return "<h1>" + esc(t("setup.parent")) + "</h1>" +
       '<p class="lead">' + esc(t("setup.parentIntro")) + "</p>" +
-      '<div class="field"><label for="pName">' + esc(t("setup.displayName")) + "</label>" +
-        '<input id="pName" type="text" value="' + esc(p.name) + '"></div>' +
+      U.nameField({ field: "pName", label: t("setup.displayName"),
+                    names: p.names, lang: p.nameLang, action: "setup.parentNameLang" }) +
       '<div class="field"><label for="pUser">' + esc(t("setup.username")) + "</label>" +
         '<input id="pUser" type="text" autocomplete="username" value="' + esc(p.username) + '"></div>' +
       '<div class="grid-2">' +
@@ -90,7 +95,7 @@
     var list = draft.children.length
       ? '<ul class="list card flush">' + draft.children.map(function (c, i) {
           return "<li>" + U.avatar(c.avatar, 40) +
-            '<div class="grow"><div class="title">' + esc(c.name) + "</div>" +
+            '<div class="grow"><div class="title">' + U.name(c) + "</div>" +
             '<div class="sub">' + (c.birthday ? esc(U.fmtDate(c.birthday)) : "—") +
             (c.pin ? " · 🔒" : "") + "</div></div>" +
             '<button class="icon-btn" data-act="setup.removeChild" data-i="' + i + '">🗑️</button></li>';
@@ -101,8 +106,8 @@
       '<p class="lead">' + esc(t("setup.childrenIntro")) + "</p>" +
       list +
       '<div class="card" style="background:var(--surface-2)">' +
-        '<div class="field"><label for="cName">' + esc(t("setup.childName")) + "</label>" +
-          '<input id="cName" type="text" value="' + esc(f.name) + '"></div>' +
+        U.nameField({ field: "cName", label: t("setup.childName"),
+                      names: f.names, lang: f.nameLang, action: "setup.childNameLang" }) +
         '<div class="grid-2">' +
           '<div class="field"><label for="cBday">' + esc(t("setup.birthday")) + "</label>" +
             '<input id="cBday" type="date" value="' + esc(f.birthday) + '"></div>' +
@@ -123,10 +128,13 @@
   function stepReview() {
     return "<h1>" + esc(t("setup.review")) + " 🎉</h1>" +
       '<p class="lead">' + esc(t("setup.reviewIntro", { n: draft.startPoints })) + "</p>" +
-      '<div class="kv"><span class="k">' + esc(t("setup.familyName")) + '</span><span>' + esc(draft.familyName) + "</span></div>" +
-      '<div class="kv"><span class="k">' + esc(t("common.parent")) + '</span><span>' + esc(draft.parent.name) + " (" + esc(draft.parent.username) + ")</span></div>" +
+      '<div class="kv"><span class="k">' + esc(t("setup.familyName")) + '</span><span>' +
+        esc(draft.familyNames[draft.lang] || firstName(draft.familyNames)) + "</span></div>" +
+      '<div class="kv"><span class="k">' + esc(t("common.parent")) + '</span><span>' +
+        esc(draft.parent.names[draft.lang] || firstName(draft.parent.names)) +
+        " (" + esc(draft.parent.username) + ")</span></div>" +
       '<div class="kv"><span class="k">' + esc(t("common.children")) + '</span><span>' +
-        draft.children.map(function (c) { return esc(c.name); }).join(", ") + "</span></div>" +
+        draft.children.map(function (c) { return esc(c.names[draft.lang] || c.name); }).join(", ") + "</span></div>" +
       '<div class="kv"><span class="k">' + esc(t("setup.startingPoints")) + '</span><span>' + draft.startPoints + "</span></div>" +
       '<div class="row gap mt">' +
         '<button class="btn ghost" data-act="setup.back">←</button>' +
@@ -134,19 +142,28 @@
       "</div>";
   }
 
+  function setNameFor(names, lang, value) {
+    value = String(value || "").trim();
+    if (value) names[lang] = value; else delete names[lang];
+  }
+  function firstName(names) {
+    var keys = Object.keys(names || {});
+    return keys.length ? names[keys[0]] : "";
+  }
+
   /* Reads whatever is currently typed so a re-render (avatar pick, step change)
      never throws the parent's input away. */
   function capture() {
     var v = function (id) { var n = U.el("#" + id); return n ? n.value : null; };
     if (step === 1) {
-      if (v("fName") !== null) draft.familyName = v("fName").trim();
+      if (v("fName") !== null) setNameFor(draft.familyNames, draft.lang, v("fName"));
     } else if (step === 2) {
-      if (v("pName") !== null) draft.parent.name = v("pName").trim();
+      if (v("pName") !== null) setNameFor(draft.parent.names, draft.parent.nameLang, v("pName"));
       if (v("pUser") !== null) draft.parent.username = v("pUser").trim();
       if (v("pPass") !== null) draft.parent.password = v("pPass");
       if (v("pPass2") !== null) draft.parent.password2 = v("pPass2");
     } else if (step === 3) {
-      if (v("cName") !== null) draft.childForm.name = v("cName").trim();
+      if (v("cName") !== null) setNameFor(draft.childForm.names, draft.childForm.nameLang, v("cName"));
       if (v("cBday") !== null) draft.childForm.birthday = v("cBday");
       if (v("cPin") !== null) draft.childForm.pin = v("cPin").replace(/\D/g, "");
     }
@@ -154,10 +171,10 @@
 
   function validateStep() {
     if (step === 1) {
-      if (!draft.familyName) return t("setup.errName");
+      if (!firstName(draft.familyNames)) return t("setup.errName");
     } else if (step === 2) {
       var p = draft.parent;
-      if (!p.name || !p.username || !p.password) return t("setup.errParent");
+      if (!firstName(p.names) || !p.username || !p.password) return t("setup.errParent");
       if (p.password.length < 4) return t("setup.errPassShort");
       if (p.password !== p.password2) return t("setup.errPass2");
     } else if (step === 3) {
@@ -166,14 +183,29 @@
     return "";
   }
 
+  /* Changing the language here also changes which spelling of the family name
+     you are writing — the name in the box follows the language, and the one you
+     were writing is kept. */
   U.on("setup.lang", function (d) {
-    capture();
+    capture();                       // keep what was typed for the old language
     draft.lang = d.lang;
+    draft.parent.nameLang = d.lang;  // every name field follows the language
+    draft.childForm.nameLang = d.lang;
     global.I18N.setLang(d.lang);
     global.App.refresh();
   });
+  U.on("setup.childNameLang", function (d, node) {
+    capture();
+    draft.childForm.nameLang = U.switchNameLang(node.dataset.field, draft.childForm.names,
+                                                draft.childForm.nameLang, d.lang);
+  });
   U.on("setup.parentAvatar", function (d) {
     capture(); draft.parent.avatar = d.avatar; global.App.refresh();
+  });
+  U.on("setup.parentNameLang", function (d, node) {
+    capture();
+    draft.parent.nameLang = U.switchNameLang(node.dataset.field, draft.parent.names,
+                                             draft.parent.nameLang, d.lang);
   });
   U.on("setup.childAvatar", function (d) {
     capture(); draft.childForm.avatar = d.avatar; global.App.refresh();
@@ -181,12 +213,14 @@
   U.on("setup.addChild", function () {
     capture();
     var f = draft.childForm;
-    if (!f.name) { error = t("setup.errChildName"); return global.App.refresh(); }
+    var name = f.names[f.nameLang] || firstName(f.names);
+    if (!name) { error = t("setup.errChildName"); return global.App.refresh(); }
     if (f.pin && f.pin.length !== 4) { error = t("setup.errPin"); return global.App.refresh(); }
-    draft.children.push({ name: f.name, avatar: f.avatar, birthday: f.birthday, pin: f.pin, lang: draft.lang });
+    draft.children.push({ name: name, names: JSON.parse(JSON.stringify(f.names)),
+                          avatar: f.avatar, birthday: f.birthday, pin: f.pin, lang: draft.lang });
     var used = draft.children.map(function (c) { return c.avatar; });
     var free = global.AVATARS.kids.filter(function (a) { return used.indexOf(a.id) === -1; })[0];
-    draft.childForm = { name: "", avatar: free ? free.id : "k1", birthday: "", pin: "" };
+    draft.childForm = { names: {}, nameLang: draft.lang, avatar: free ? free.id : "k1", birthday: "", pin: "" };
     error = "";
     global.App.refresh();
   });
@@ -207,16 +241,23 @@
   U.on("setup.create", function () {
     global.Store.createFamily({
       lang: draft.lang,
-      familyName: draft.familyName,
+      familyName: draft.familyNames[draft.lang] || firstName(draft.familyNames),
+      familyNames: draft.familyNames,
       startPoints: draft.startPoints,
-      parent: draft.parent,
+      parent: {
+        name: draft.parent.names[draft.lang] || firstName(draft.parent.names),
+        names: draft.parent.names,
+        username: draft.parent.username,
+        password: draft.parent.password,
+        avatar: draft.parent.avatar
+      },
       children: draft.children
     });
     var parent = global.Store.get().parents[0];
     global.Store.setSession("parent", parent.id);
     reset();
     global.App.go({ screen: "parent", tab: "dashboard" });
-    U.toast(t("auth.welcomeBack", { name: parent.name }), "good");
+    U.toast(t("auth.welcomeBack", { name: global.Store.nameOf(parent) }), "good");
   });
 
   /* ---------------- sign in ---------------- */
@@ -230,7 +271,7 @@
     return '<div class="wrap">' +
       '<div class="card center" style="padding-block:26px">' +
         '<div class="brand-mark" style="margin:0 auto 10px;width:52px;height:52px;font-size:1.5rem">🏆</div>' +
-        "<h1>" + esc(s.settings.familyName || t("app.name")) + "</h1>" +
+        "<h1>" + U.familyName() + "</h1>" +
         '<p class="lead">' + esc(t("app.tagline")) + "</p>" +
       "</div>" +
       '<div class="card">' +
@@ -267,7 +308,7 @@
     return '<p class="lead">' + esc(t("auth.pickChild")) + "</p>" +
       '<div class="kid-grid">' + s.children.map(function (c) {
         return '<button class="kid-card" data-act="login.child" data-id="' + c.id + '">' +
-          U.avatar(c.avatar, 56) + '<span class="nm">' + esc(c.name) + "</span>" +
+          U.avatar(c.avatar, 56) + '<span class="nm">' + U.name(c) + "</span>" +
           (c.pin ? '<span class="tag">🔒</span>' : "") + "</button>";
       }).join("") + "</div>";
   }
@@ -292,14 +333,14 @@
     global.Store.setSession("parent", p.id);
     global.App.applyUserLang();
     global.App.go({ screen: "parent", tab: "dashboard" });
-    U.toast(t("auth.welcomeBack", { name: p.name }), "good");
+    U.toast(t("auth.welcomeBack", { name: global.Store.nameOf(p) }), "good");
   });
   U.on("login.child", function (d) {
     var c = global.Store.child(d.id);
     if (!c) return;
     if (!c.pin) return enterAsChild(c);
     pinChildId = c.id;
-    U.modal(c.name,
+    U.modal(global.Store.nameOf(c),
       '<form data-act="login.pin">' +
         '<p class="lead center">' + esc(t("auth.enterPin")) + "</p>" +
         '<div class="center">' + U.avatar(c.avatar, 64) + "</div>" +
@@ -324,7 +365,7 @@
     global.Store.setSession("child", c.id);
     global.App.applyUserLang();
     global.App.go({ screen: "child", tab: "me" });
-    U.toast(t("auth.welcomeBack", { name: c.name }), "good");
+    U.toast(t("auth.welcomeBack", { name: global.Store.nameOf(c) }), "good");
   }
 
   global.Setup = { render: render, renderLogin: renderLogin, reset: reset };
