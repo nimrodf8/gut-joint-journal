@@ -46,7 +46,7 @@
           return '<li class="tappable" data-act="p.openChild" data-id="' + r.child.id + '">' +
             '<span class="rank-badge' + (i === 0 && r.earned > 0 ? " gold" : "") + '">' + (i + 1) + "</span>" +
             U.avatar(r.child.avatar, 40) +
-            '<div class="grow"><div class="title">' + esc(r.child.name) + "</div>" +
+            '<div class="grow"><div class="title">' + U.name(r.child) + "</div>" +
             '<div class="sub">' + esc(t("dash.earnedThisWeek", { n: U.signed(r.earned) })) + "</div></div>" +
             '<strong class="score" style="font-size:1.15rem">' + r.balance + "</strong></li>";
         }).join("") + "</ul>"
@@ -75,7 +75,7 @@
       body = "<p><strong>🍿 " + esc(todays.movie) + "</strong><br><small>" +
         esc(t("movie.pickedBy", { name: nameOf(todays.winnerId) })) + "</small></p>";
     } else if (isDay && winner) {
-      body = "<p><strong>" + esc(winner.child.name) + "</strong> · " + esc(weeklyPrize()) + "</p>" +
+      body = "<p><strong>" + U.name(winner.child) + "</strong> · " + esc(weeklyPrize()) + "</p>" +
         '<button class="btn block" data-act="p.movie">' + esc(t("movie.record")) + "</button>";
     } else if (isDay) {
       body = '<p class="lead">' + esc(t("movie.noWinner")) + "</p>";
@@ -115,7 +115,7 @@
         return '<div class="countdown' + (r.bd.days === 0 ? " today" : "") + '">' +
           '<span class="days">' + (r.bd.days === 0 ? "🎂" : r.bd.days) + "</span>" +
           U.avatar(r.child.avatar, 36) +
-          '<div class="grow"><div class="title">' + esc(r.child.name) + "</div>" +
+          '<div class="grow"><div class="title">' + U.name(r.child) + "</div>" +
           '<div class="sub">' + esc(label) + " · " + esc(t("dash.turns", { n: r.bd.turning })) + "</div></div></div>";
       }).join("") + "</div>";
   }
@@ -275,7 +275,7 @@
         (d.assign === "some" ? '<div class="chips">' + s.children.map(function (c) {
           var on = (d.assignIds || []).indexOf(c.id) !== -1;
           return '<button type="button" class="chip' + (on ? " on" : "") + '" data-act="p.taskChild" data-id="' + c.id + '">' +
-            esc(c.name) + "</button>";
+            U.name(c) + "</button>";
         }).join("") + "</div>" : "") +
       "</div>" +
       '<label class="row tight"><input type="checkbox" id="tActive" style="width:auto" ' + (d.active ? "checked" : "") + "> " +
@@ -430,7 +430,7 @@
           (d.assign === "some" ? '<div class="chips">' + s.children.map(function (c) {
             var on = (d.assignIds || []).indexOf(c.id) !== -1;
             return '<button type="button" class="chip' + (on ? " on" : "") + '" data-act="p.rewardChild" data-id="' + c.id + '">' +
-              esc(c.name) + "</button>";
+              U.name(c) + "</button>";
           }).join("") + "</div>" : "") + "</div>"
         : "") +
       '<label class="row tight"><input type="checkbox" id="rActive" style="width:auto" ' + (d.active ? "checked" : "") + "> " +
@@ -467,7 +467,7 @@
       ? '<div class="card flush"><ul class="list">' + s.children.map(function (c) {
           return '<li class="tappable" data-act="p.openChild" data-id="' + c.id + '">' +
             U.avatar(c.avatar, 44) +
-            '<div class="grow"><div class="title">' + esc(c.name) + "</div>" +
+            '<div class="grow"><div class="title">' + U.name(c) + "</div>" +
             '<div class="sub">' + esc(t("kids.week")) + " " + U.points(S.weekEarned(c.id)) +
             " · " + esc(t("lang." + (c.lang || S.get().settings.lang))) + "</div></div>" +
             '<strong class="score" style="font-size:1.15rem">' + S.balance(c.id) + "</strong></li>";
@@ -485,7 +485,7 @@
     var html = '<div class="wrap">' +
       '<button class="btn ghost small mb" data-act="p.backKids">← ' + esc(t("common.back")) + "</button>" +
       '<div class="card center">' + U.avatar(c.avatar, 76) +
-        "<h1 style=\"margin-top:8px\">" + esc(c.name) + "</h1>" +
+        "<h1 style=\"margin-top:8px\">" + U.name(c) + "</h1>" +
         '<div class="score" style="font-size:2.4rem">' + S.balance(c.id) + "</div>" +
         '<small>' + esc(t("kids.balance")) + " · " + esc(t("common.rank")) + " " + rank + "</small>" +
         '<div class="row gap mt" style="justify-content:center">' +
@@ -516,7 +516,7 @@
         : U.emptyState(t("kids.noHistory"), "📈")) + "</div>";
 
     html += '<button class="btn danger block mt" data-act="p.childDelete" data-id="' + c.id + '">' +
-      esc(t("common.remove")) + " " + esc(c.name) + "</button>";
+      esc(t("common.remove")) + " " + U.name(c) + "</button>";
     return html + "</div>";
   }
 
@@ -548,10 +548,15 @@
   function childEditor(child) {
     var isNew = !child;
     var c = child || { id: "", name: "", avatar: nextFreeAvatar(), birthday: "", pin: null };
+    editingNameLang = global.I18N.lang;
+    editingNames = S.clone(c.names || {});
+    if (c.name && !editingNames[editingNameLang] && !Object.keys(editingNames).length) {
+      editingNames[editingNameLang] = c.name;
+    }
     U.modal(isNew ? t("kids.add") : t("kids.profile"),
       '<form data-act="p.childSave" data-id="' + (c.id || "") + '">' +
-        '<div class="field"><label for="cnName">' + esc(t("setup.childName")) + "</label>" +
-          '<input id="cnName" type="text" value="' + esc(c.name) + '"></div>' +
+        U.nameField({ field: "cnName", label: t("setup.childName"),
+                      names: editingNames, lang: editingNameLang, action: "p.nameLang" }) +
         '<div class="grid-2">' +
           '<div class="field"><label for="cnBday">' + esc(t("setup.birthday")) + "</label>" +
             '<input id="cnBday" type="date" value="' + esc(c.birthday || "") + '"></div>' +
@@ -568,6 +573,7 @@
     editingAvatar = c.avatar;
     editingLang = c.lang || S.get().settings.lang;
   }
+  var editingNames = {}, editingNameLang = "en";
   var editingAvatar = "k1";
   var editingLang = "en";
   function nextFreeAvatar() {
@@ -599,7 +605,7 @@
 
       return "<li>" + U.avatar(c.avatar, 40) +
         '<div class="grow"><div class="title">' + (isReward ? (item.icon || "🎁") + " " : "") + U.keyedTitleHtml(item) + "</div>" +
-        '<div class="sub">' + esc(c.name) + " · " +
+        '<div class="sub">' + U.name(c) + " · " +
           esc(isReward ? t("appr.wantsReward") : t("appr.claimedAt", { when: U.relTime(cl.ts) })) + "</div>" +
         '<div class="sub">' + value +
           (afford ? "" : ' <span class="tag bad">' + esc(t("rewards.short", { n: U.iso(cost - S.balance(c.id)) })) + "</span>") +
@@ -622,8 +628,8 @@
 
     var mine = me();
     html += '<form data-act="p.settingsSave" class="card">' +
-      '<div class="field"><label for="sName">' + esc(t("setup.familyName")) + "</label>" +
-        '<input id="sName" type="text" value="' + esc(s.settings.familyName) + '"></div>' +
+      U.nameField({ field: "sName", label: t("setup.familyName"),
+                    names: familyNames(), lang: familyNameLang, action: "p.familyNameLang" }) +
       '<div class="field"><span class="field-label">' + esc(t("tr.yourLang")) + "</span>" +
         langChips(mine.lang || s.settings.lang, "p.myLang") +
         '<div class="hint">' + esc(t("tr.userLangHint")) + "</div></div>" +
@@ -649,7 +655,7 @@
       '<button class="btn small soft" data-act="p.parentNew">＋</button></div>' +
       '<div class="card flush"><ul class="list">' + s.parents.map(function (p) {
         return "<li>" + U.avatar(p.avatar, 40) +
-          '<div class="grow"><div class="title">' + esc(p.name) + "</div>" +
+          '<div class="grow"><div class="title">' + U.name(p) + "</div>" +
           '<div class="sub">' + esc(p.username) + " · " + esc(t("lang." + (p.lang || s.settings.lang))) + "</div></div>" +
           '<button class="icon-btn" data-act="p.parentPass" data-id="' + p.id + '">🔑</button>' +
           (s.parents.length > 1 ? '<button class="icon-btn" data-act="p.parentDelete" data-id="' + p.id + '">🗑️</button>' : "") +
@@ -678,6 +684,20 @@
       "</div>";
 
     return html + "</div>";
+  }
+
+  /* The family's own name, written per language, edited in settings. */
+  var familyNameLang = "en", familyNamesDraft = null;
+  function familyNames() {
+    var set = S.get().settings;
+    if (!familyNamesDraft) {
+      familyNamesDraft = S.clone(set.familyNames || {});
+      familyNameLang = global.I18N.lang;
+      if (set.familyName && !Object.keys(familyNamesDraft).length) {
+        familyNamesDraft[familyNameLang] = set.familyName;
+      }
+    }
+    return familyNamesDraft;
   }
 
   function langChips(active, action, extra) {
@@ -793,7 +813,7 @@
         esc(d.outcome === "done" ? t("tasks.markDone") : t("tasks.markMissed")) + "</p>" +
       '<div class="kid-grid">' + kids.map(function (c) {
         return '<button class="kid-card" data-act="p.awardPick" data-id="' + c.id + '">' +
-          U.avatar(c.avatar, 52) + '<span class="nm">' + esc(c.name) + "</span></button>";
+          U.avatar(c.avatar, 52) + '<span class="nm">' + U.name(c) + "</span></button>";
       }).join("") + "</div>");
   });
   U.on("p.awardPick", function (d) {
@@ -804,7 +824,7 @@
   function applyAward(childId, task, outcome) {
     var entry = S.awardTask(childId, task.id, outcome, me().id);
     var c = S.child(childId);
-    U.toast(t("tasks.awarded", { name: c.name, sign: "", n: U.signed(entry.self) }),
+    U.toast(t("tasks.awarded", { name: S.nameOf(c), sign: "", n: U.signed(entry.self) }),
       entry.self >= 0 ? "good" : "bad");
     global.App.refresh();
   }
@@ -842,16 +862,21 @@
     });
   });
   U.on("p.childSave", function (d, form) {
-    var name = U.el("#cnName", form).value.trim();
+    var typed = U.el("#cnName", form).value.trim();
+    if (typed) editingNames[editingNameLang] = typed; else delete editingNames[editingNameLang];
+    var name = editingNames[editingNameLang] ||
+      Object.keys(editingNames).map(function (k) { return editingNames[k]; })[0] || "";
     if (!name) return U.toast(t("setup.errChildName"), "bad");
     var birthday = U.el("#cnBday", form).value;
     var pin = U.el("#cnPin", form).value.replace(/\D/g, "");
     if (pin && pin.length !== 4) return U.toast(t("setup.errPin"), "bad");
     if (d.id) {
-      S.updateChild(d.id, { name: name, birthday: birthday, avatar: editingAvatar, lang: editingLang });
+      S.updateChild(d.id, { name: name, names: S.clone(editingNames), birthday: birthday,
+                            avatar: editingAvatar, lang: editingLang });
       if (pin) S.setChildPin(d.id, pin);
     } else {
-      S.addChild({ name: name, birthday: birthday, avatar: editingAvatar, pin: pin, lang: editingLang }, me().id);
+      S.addChild({ name: name, names: S.clone(editingNames), birthday: birthday,
+                   avatar: editingAvatar, pin: pin, lang: editingLang }, me().id);
     }
     U.closeModal();
     U.toast(t("common.saved"), "good");
@@ -859,7 +884,7 @@
   });
   U.on("p.childDelete", function (d) {
     var c = S.child(d.id);
-    U.confirmDialog(t("kids.deleteConfirm", { name: c.name }), function () {
+    U.confirmDialog(t("kids.deleteConfirm", { name: S.nameOf(c) }), function () {
       S.removeChild(d.id);
       global.App.go({ tab: "kids", params: {} });
     });
@@ -947,7 +972,7 @@
         var left = S.balance(c.id) - S.num(r.cost);
         return '<button class="kid-card" data-act="p.giveRewardTo" data-reward="' + r.id + '" data-id="' + c.id + '"' +
           (left < 0 ? " disabled" : "") + ">" +
-          U.avatar(c.avatar, 52) + '<span class="nm">' + esc(c.name) + "</span>" +
+          U.avatar(c.avatar, 52) + '<span class="nm">' + U.name(c) + "</span>" +
           '<span class="tag">' + (left < 0 ? esc(t("rewards.short", { n: U.iso(-left) }))
                                            : esc(t("rewards.balanceAfter", { n: U.iso(left) }))) + "</span></button>";
       }).join("") + "</div>");
@@ -955,7 +980,7 @@
   U.on("p.giveRewardTo", function (d) {
     var r = S.reward(d.reward);
     var c = S.child(d.id);
-    if (!S.redeem(r.id, c.id, "", me().id)) return U.toast(t("rewards.tooExpensive", { name: c.name }), "bad");
+    if (!S.redeem(r.id, c.id, "", me().id)) return U.toast(t("rewards.tooExpensive", { name: S.nameOf(c) }), "bad");
     U.closeModal();
     U.toast(t("rewards.redeemed", { name: U.keyedTitle(r), n: U.iso(S.num(r.cost)) }), "good");
     global.App.refresh();
@@ -978,7 +1003,7 @@
     var wishes = top.child.outings || [];
     U.modal(U.keyedTitle(r),
       '<div class="center">' + U.avatar(top.child.avatar, 64) + "</div>" +
-      '<p class="lead center">' + esc(t("rewards.chooser", { name: top.child.name })) + "</p>" +
+      '<p class="lead center">' + esc(t("rewards.chooser", { name: S.nameOf(top.child) })) + "</p>" +
       '<form data-act="p.redeemSave" data-reward="' + r.id + '" data-id="' + top.child.id + '">' +
         (wishes.length
           ? '<div class="field"><span class="field-label">' + esc(t("kids.outings")) + "</span>" +
@@ -1007,7 +1032,7 @@
     if (!winner) return U.toast(t("movie.noWinner"), "bad");
     U.modal(weeklyPrize(),
       '<div class="center">' + U.avatar(winner.child.avatar, 64) + "</div>" +
-      '<p class="lead center">' + esc(winner.child.name) + " · " + esc(weeklyPrize()) + "</p>" +
+      '<p class="lead center">' + U.name(winner.child) + " · " + esc(weeklyPrize()) + "</p>" +
       '<form data-act="p.movieSave" data-id="' + winner.child.id + '">' +
         '<div class="field"><label for="mvName">' + esc(t("movie.movieName")) + "</label>" +
           '<input id="mvName" type="text"></div>' +
@@ -1043,7 +1068,14 @@
   U.on("p.myLang", function (d) {
     S.setUserLang("parent", me().id, d.lang);
     global.I18N.setLang(d.lang);
+    familyNamesDraft = null;      // re-read the family's names for the new language
     global.App.refresh();
+  });
+  U.on("p.nameLang", function (d, node) {
+    editingNameLang = U.switchNameLang(node.dataset.field, editingNames, editingNameLang, d.lang);
+  });
+  U.on("p.familyNameLang", function (d, node) {
+    familyNameLang = U.switchNameLang(node.dataset.field, familyNames(), familyNameLang, d.lang);
   });
   U.on("p.childLang", function (d, node) {
     editingLang = d.lang;
@@ -1108,7 +1140,12 @@
   });
   U.on("p.settingsSave", function (d, form) {
     var s = S.get();
-    s.settings.familyName = U.el("#sName", form).value.trim();
+    var names = familyNames();
+    var typed = U.el("#sName", form).value.trim();
+    if (typed) names[familyNameLang] = typed; else delete names[familyNameLang];
+    s.settings.familyNames = names;
+    s.settings.familyName = names[familyNameLang] || s.settings.familyName ||
+      Object.keys(names).map(function (k) { return names[k]; })[0] || "";
     s.settings.weeklyPrize = U.el("#sPrize", form).value.trim();
     s.settings.weekStart = S.num(U.el("#sWeek", form).value);
     s.settings.movieDay = S.num(U.el("#sMovie", form).value);
@@ -1118,9 +1155,12 @@
   });
 
   U.on("p.parentNew", function () {
+    editingNames = {};
+    editingNameLang = global.I18N.lang;
     U.modal(t("family.addParent"),
       '<form data-act="p.parentSave">' +
-        '<div class="field"><label for="npName">' + esc(t("setup.displayName")) + "</label><input id=\"npName\" type=\"text\"></div>" +
+        U.nameField({ field: "npName", label: t("setup.displayName"),
+                      names: editingNames, lang: editingNameLang, action: "p.nameLang" }) +
         '<div class="field"><label for="npUser">' + esc(t("setup.username")) + "</label><input id=\"npUser\" type=\"text\" autocapitalize=\"none\"></div>" +
         '<div class="field"><label for="npPass">' + esc(t("setup.password")) + "</label><input id=\"npPass\" type=\"password\"></div>" +
         '<div class="field"><span class="field-label">' + esc(t("common.avatar")) + "</span>" +
@@ -1137,11 +1177,17 @@
     });
   });
   U.on("p.parentSave", function (d, form) {
-    var name = U.el("#npName", form).value.trim();
+    var typedName = U.el("#npName", form).value.trim();
+    if (typedName) editingNames[editingNameLang] = typedName; else delete editingNames[editingNameLang];
+    var name = editingNames[editingNameLang] ||
+      Object.keys(editingNames).map(function (k) { return editingNames[k]; })[0] || "";
     var user = U.el("#npUser", form).value.trim();
     var pass = U.el("#npPass", form).value;
     if (!name || !user || pass.length < 4) return U.toast(t("setup.errParent"), "bad");
-    if (!S.addParent(name, user, pass, parentAvatar)) return U.toast(t("auth.badLogin"), "bad");
+    var added = S.addParent(name, user, pass, parentAvatar);
+    if (!added) return U.toast(t("auth.badLogin"), "bad");
+    added.names = S.clone(editingNames);
+    S.save();
     U.closeModal();
     U.toast(t("common.saved"), "good");
     global.App.refresh();

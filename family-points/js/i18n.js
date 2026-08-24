@@ -93,6 +93,11 @@
     "setup.restore": "Restore from a backup",
     "setup.joinFamily": "Join with an invite link",
 
+    "name.perLang": "Write it for each language",
+    "name.hint": "Names are never translated. Pick a language and write the name the way it should look there; a language you leave empty shows the first one you wrote.",
+    "name.writing": "Writing the {lang} name",
+    "name.filled": "written",
+
     "sync.title": "One family on every device",
     "sync.hint": "Turn this on and the family lives on a small server instead of only in this browser. Points, tasks and notes reach every phone, tablet and computer within seconds.",
     "sync.off": "Off — this device keeps its own copy",
@@ -453,6 +458,11 @@
     "setup.restore": "Terugzetten uit een back-up",
     "setup.joinFamily": "Meedoen met een uitnodigingslink",
 
+    "name.perLang": "Schrijf hem per taal",
+    "name.hint": "Namen worden nooit vertaald. Kies een taal en schrijf de naam zoals hij daar hoort; een taal die je leeg laat, toont de eerste die je hebt geschreven.",
+    "name.writing": "Je schrijft de {lang} naam",
+    "name.filled": "ingevuld",
+
     "sync.title": "Eén gezin op elk apparaat",
     "sync.hint": "Zet dit aan en het gezin staat op een kleine server in plaats van alleen in deze browser. Punten, taken en notities bereiken binnen enkele seconden elke telefoon, tablet en computer.",
     "sync.off": "Uit — dit apparaat houdt zijn eigen kopie",
@@ -812,6 +822,11 @@
     "setup.haveFamily": "כבר הקמתם את המשפחה הזאת במקום אחר?",
     "setup.restore": "שחזור מגיבוי",
     "setup.joinFamily": "הצטרפות עם קישור הזמנה",
+
+    "name.perLang": "כתיבת השם בכל שפה",
+    "name.hint": "שמות אף פעם לא מתורגמים. בחרו שפה וכתבו את השם כפי שהוא צריך להיראות בה; שפה שתשאירו ריקה תציג את השם הראשון שכתבתם.",
+    "name.writing": "כותבים את השם ב{lang}",
+    "name.filled": "מולא",
 
     "sync.title": "משפחה אחת בכל המכשירים",
     "sync.hint": "כשמפעילים, המשפחה נשמרת בשרת קטן ולא רק בדפדפן הזה. נקודות, משימות והערות מגיעות לכל טלפון, טאבלט ומחשב תוך שניות.",

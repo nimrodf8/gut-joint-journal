@@ -28,7 +28,7 @@
     var html = '<div class="wrap">' +
       '<div class="card hero center">' +
         U.avatar(c.avatar, 84) +
-        "<h1 style=\"margin-top:10px\">" + esc(c.name) + "</h1>" +
+        "<h1 style=\"margin-top:10px\">" + U.name(c) + "</h1>" +
         '<div class="score" style="font-size:2.8rem">' + S.balance(c.id) + "</div>" +
         '<small>' + esc(t("common.points")) + "</small>" +
         '<div class="row gap mt" style="justify-content:center">' +
@@ -191,7 +191,7 @@
         U.progressBar(gp.pct) +
         (gp.reached
           ? "<p>🎉 " + esc(t("rewards.unlockedCount", { n: U.iso(gp.unlocked.length) })) + "</p>" +
-            (top ? "<small>" + esc(t("rewards.chooser", { name: top.child.id === c.id ? t("common.you") : top.child.name })) + "</small>" : "")
+            (top ? "<small>" + esc(t("rewards.chooser", { name: top.child.id === c.id ? t("common.you") : S.nameOf(top.child) })) + "</small>" : "")
           : "<small>" + esc(gp.next
               ? t("rewards.nextGoal", { name: U.keyedTitle(gp.next) }) + " · " + t("rewards.short", { n: U.iso(gp.missing) })
               : t("rewards.short", { n: U.iso(gp.missing) })) + "</small>") +
@@ -202,7 +202,7 @@
         return '<li' + (r.child.id === c.id ? ' style="background:var(--brand-soft)"' : "") + ">" +
           '<span class="rank-badge' + (i === 0 && r.earned > 0 ? " gold" : "") + '">' + (i + 1) + "</span>" +
           U.avatar(r.child.avatar, 38) +
-          '<div class="grow"><div class="title">' + esc(r.child.name) + "</div>" +
+          '<div class="grow"><div class="title">' + U.name(r.child) + "</div>" +
           '<div class="sub">' + esc(t("dash.earnedThisWeek", { n: U.signed(r.earned) })) + "</div></div>" +
           '<strong class="score" style="font-size:1.1rem">' + r.balance + "</strong></li>";
       }).join("") + "</ul></div>";

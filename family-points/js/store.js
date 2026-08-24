@@ -224,10 +224,12 @@
   function createFamily(opts) {
     state = emptyState(opts.lang);
     state.settings.familyName = opts.familyName || "";
+    state.settings.familyNames = opts.familyNames || {};
     if (opts.startPoints) state.settings.startPoints = opts.startPoints;
 
     var parent = addParentRecord(opts.parent.name, opts.parent.username, opts.parent.password,
                                  opts.parent.avatar, state.settings.lang);
+    if (opts.parent.names) parent.names = opts.parent.names;
     (opts.children || []).forEach(function (c) { addChild(c, parent.id); });
     if (opts.seedTasks !== false) {
       state.tasks = defaultTasks();
@@ -243,6 +245,7 @@
       name: name,
       username: String(username || "").trim().toLowerCase(),
       avatar: avatar || "p1",
+      names: {},
       lang: lang || authorLang(),
       secret: makeSecret(password),
       createdAt: now()
@@ -280,6 +283,7 @@
       id: uid("kid"),
       name: data.name,
       avatar: data.avatar || "k1",
+      names: data.names || {},
       lang: data.lang || state.settings.lang,
       birthday: data.birthday || "",
       pin: data.pin ? makeSecret(String(data.pin)) : null,
@@ -333,6 +337,38 @@
       });
     }
     return owner;
+  }
+
+  /* Names of people and of the family are never translated — a person's name
+     is not a phrase. What a family can do instead is write the name once per
+     language, so "משפחת כהן" and "Familie Cohen" are the same family seen from
+     two languages. `name` is the fallback for a language nobody filled in. */
+  function pickName(names, fallback) {
+    var lang = global.I18N ? global.I18N.lang : "en";
+    var home = state && state.settings ? state.settings.lang : "en";
+    if (!names) return fallback || "";
+    // the reader's language, then the family's own, then whatever was written
+    if (names[lang]) return names[lang];
+    if (names[home]) return names[home];
+    if (fallback) return fallback;
+    var written = Object.keys(names).map(function (k) { return names[k]; }).filter(Boolean);
+    return written[0] || "";
+  }
+  function nameOf(entity) {
+    if (!entity) return "";
+    return pickName(entity.names, entity.name);
+  }
+  function setName(entity, lang, value) {
+    if (!entity) return entity;
+    value = String(value || "").trim();
+    if (!entity.names) entity.names = {};
+    if (value) entity.names[lang] = value; else delete entity.names[lang];
+    if (!entity.name) entity.name = value;
+    return entity;
+  }
+  function familyName() {
+    var set = state && state.settings;
+    return set ? pickName(set.familyNames, set.familyName) : "";
   }
 
   function byId(list, id) {
@@ -780,6 +816,7 @@
     removeListItem: removeListItem, moveListItem: moveListItem,
     setSession: setSession, getSession: getSession, clearSession: clearSession,
     checkSecret: checkSecret, makeSecret: makeSecret,
+    nameOf: nameOf, setName: setName, familyName: familyName,
     uid: uid, now: now, dayKey: dayKey, clone: clone, num: num
   };
 })(window);

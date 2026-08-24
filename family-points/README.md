@@ -105,18 +105,31 @@ How it holds together when two people are using it at once:
 
 Anyone holding the invite link is in the family, so treat it like a key to the
 house. Reaching a family requires both its id — an unguessable one — and its
-secret; the public API key on its own opens nothing. To run this on your own
-server instead, set `window.FP_SYNC_SERVER = {url, key}` before the app loads,
-or edit the two lines at the top of `js/sync.js`; the schema it expects is in
-`server/schema.sql`.
+secret; the public API key on its own opens nothing.
 
-## Languages and simultaneous translation
+The server is a Supabase project (`family-points`, eu-central-1) holding nothing
+but that one table. To run this on your own server instead, set
+`window.FP_SYNC_SERVER = {url, key}` before the app loads, or edit the two lines
+at the top of `js/sync.js`; the schema it expects is `server/schema.sql`, which
+applies to any Postgres behind PostgREST.
+
+## Languages, names and simultaneous translation
 
 Language is a personal setting, not a family-wide one: a parent can read the app
 in Dutch while a child reads the same family in Hebrew. Each account stores its
 own choice, so signing in switches the whole interface — including the
 right-to-left layout for Hebrew — to that person's language. The family default
 in settings only decides what a newly created account starts with.
+
+**Names are never translated.** A person's name is not a phrase, and no machine
+should be guessing at it. What a family can do instead is write a name once per
+language: the family name, each parent and each child have a language row above
+their name field, so "משפחת כהן" and "Familie Cohen" are the same family seen
+from two languages. In the setup wizard the language you pick also decides which
+spelling you are writing, and switching language keeps the one you just typed
+rather than carrying it over. A language nobody filled in falls back to the
+reader's language, then the family's own, then whatever was written first — it
+is never invented.
 
 Free text follows the reader. A note a child types in Hebrew shows up in Dutch
 for the parent who reads Dutch, and a task a parent names in Dutch shows up in
@@ -134,9 +147,12 @@ entered.
   one go, and after that it works offline.
 - Each result is cached on the record, so a translated note renders instantly
   ever after and is not re-translated on every visit.
-- If the browser cannot translate (anything older than Chrome 138, or a missing
-  language pair), the text is shown exactly as written and tagged with its
-  language, and settings says plainly why. Translation can also be switched off.
+- If the browser cannot translate — anything older than Chrome 138, a missing
+  language pair, or a language pack it cannot fetch — the text is shown exactly
+  as written and tagged with its language, and settings says plainly why.
+  Waiting for a pack never blocks the page: it gives up after a few seconds,
+  shows the original, and picks the translation up once the pack arrives.
+  Translation can also be switched off.
 - The quality is whatever the on-device model gives you — good enough to
   understand a note, not a human translator.
 

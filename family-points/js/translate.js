@@ -12,6 +12,9 @@
 (function (global) {
   "use strict";
 
+  var SESSION_WAIT = 12000;   // how long a render waits for a language pack
+  var TRANSLATE_WAIT = 20000;
+
   var sessions = {};     // "he>nl" -> translator instance
   var creating = {};     // "he>nl" -> in-flight create promise
   var broken = {};       // "he>nl" -> true, this pair is not available here
@@ -52,29 +55,45 @@
 
   function key(from, to) { return from + ">" + to; }
 
-  function session(from, to) {
-    var k = key(from, to);
-    if (sessions[k]) return Promise.resolve(sessions[k]);
-    if (broken[k]) return Promise.resolve(null);
-    if (creating[k]) return creating[k];
+  /* Waits for a promise, but not forever. A language pack that is still
+     downloading must not hold a note hostage: the caller shows the original
+     now and picks the translation up on a later round. */
+  function withTimeout(promise, ms, onTimeout) {
+    return new Promise(function (resolve, reject) {
+      var settled = false;
+      var timer = setTimeout(function () {
+        if (settled) return;
+        settled = true;
+        resolve(onTimeout ? onTimeout() : null);
+      }, ms);
+      promise.then(function (value) {
+        if (settled) return;
+        settled = true; clearTimeout(timer); resolve(value);
+      }, function (err) {
+        if (settled) return;
+        settled = true; clearTimeout(timer); reject(err);
+      });
+    });
+  }
 
+  function startSession(from, to, k) {
     var api = engine();
     if (!api) { state = "unsupported"; return Promise.resolve(null); }
-
-    creating[k] = api.availability({ sourceLanguage: from, targetLanguage: to })
+    return api.availability({ sourceLanguage: from, targetLanguage: to })
       .then(function (availability) {
         if (availability === "unavailable") { broken[k] = true; return null; }
         return api.create({ sourceLanguage: from, targetLanguage: to });
       })
       .then(function (instance) {
-        delete creating[k];
-        if (!instance) return null;
-        sessions[k] = instance;
-        state = "ready";
+        if (instance) {
+          sessions[k] = instance;
+          state = "ready";
+          scheduleRefresh();     // anything that gave up earlier can try again
+        }
         return instance;
       })
       .catch(function (err) {
-        delete creating[k];
+        delete creating[k];      // let a later attempt start afresh
         // A pack that still has to be downloaded needs a real click to start.
         if (err && (err.name === "NotAllowedError" || err.name === "SecurityError")) {
           if (state !== "ready") state = "needs-download";
@@ -83,7 +102,18 @@
         }
         return null;
       });
-    return creating[k];
+  }
+
+  function session(from, to) {
+    var k = key(from, to);
+    if (sessions[k]) return Promise.resolve(sessions[k]);
+    if (broken[k]) return Promise.resolve(null);
+    if (!engine()) { state = "unsupported"; return Promise.resolve(null); }
+    if (!creating[k]) creating[k] = startSession(from, to, k);
+    return withTimeout(creating[k], SESSION_WAIT, function () {
+      if (state !== "ready") state = "needs-download";
+      return null;
+    });
   }
 
   /* Downloading a language pack has to start from a user gesture, so settings
@@ -95,11 +125,15 @@
     state = "working";
     scheduleRefresh();
     var pending = wanted.length;
+    inflight = {};   // anything that gave up waiting may ask again
     wanted.forEach(function (pair) {
-      delete broken[key(pair[0], pair[1])];   // give a pair that failed another go
-      session(pair[0], pair[1]).then(function () {
+      var k = key(pair[0], pair[1]);
+      delete broken[k];            // give a pair that failed another go
+      if (!creating[k]) creating[k] = startSession(pair[0], pair[1], k);
+      creating[k].then(function () {
         if (--pending === 0) {
           if (state === "working") state = "ready";
+          inflight = {};
           scheduleRefresh();
           if (onDone) onDone();
         }
@@ -168,8 +202,8 @@
     if (inflight[mark]) return;
     inflight[mark] = true;
     session(source, target).then(function (instance) {
-      if (!instance) { delete inflight[mark]; scheduleRefresh(); return; }
-      return instance.translate(owner[field]).then(function (text) {
+      if (!instance) { delete inflight[mark]; return; }
+      return withTimeout(instance.translate(owner[field]), TRANSLATE_WAIT).then(function (text) {
         delete inflight[mark];
         if (!text) return;
         if (!owner.tr) owner.tr = {};

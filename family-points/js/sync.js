@@ -19,11 +19,11 @@
   /* Point this somewhere else — before the script loads, or by editing here —
      to run the family on your own server instead. */
   var SERVER = global.FP_SYNC_SERVER || {
-    url: "https://ylynavjvpzikqvipfmxq.supabase.co",
+    url: "https://dmvpelpnboqwrrviihjo.supabase.co",
     // A publishable key. It permits nothing on its own: the table is not
     // reachable through the API, and every function demands the family's id
     // together with its secret.
-    key: "sb_publishable_IqPF_8WqcKiJOQv15HtbDg_PMrhdJdu"
+    key: "sb_publishable_kcboCR6GKmQ9DsPjFfiTAw_ViFPQAVl"
   };
 
   var CONF_KEY = "familyPoints.sync";
