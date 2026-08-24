@@ -270,6 +270,23 @@
     save();
     return true;
   }
+  /* Editing a parent. A username has to stay unique, so a clash is reported
+     rather than quietly overwriting whoever holds it. */
+  function updateParent(id, patch) {
+    var p = parent(id);
+    if (!p) return null;
+    if (patch.username !== undefined) {
+      var wanted = String(patch.username || "").trim().toLowerCase();
+      if (!wanted) return null;
+      var holder = findParent(wanted);
+      if (holder && holder.id !== id) return false;
+      patch.username = wanted;
+    }
+    Object.keys(patch).forEach(function (k) { p[k] = patch[k]; });
+    save();
+    return p;
+  }
+
   function setParentPassword(id, password) {
     var p = byId(state.parents, id);
     if (!p) return false;
@@ -796,7 +813,7 @@
     onSave: onSave, forget: forget,
     createFamily: createFamily, emptyState: emptyState, defaultTasks: defaultTasks,
     addParent: addParent, findParent: findParent, removeParent: removeParent,
-    setParentPassword: setParentPassword, parent: parent,
+    setParentPassword: setParentPassword, updateParent: updateParent, parent: parent,
     addChild: addChild, removeChild: removeChild, updateChild: updateChild,
     setUserLang: setUserLang, addCategory: addCategory, authorLang: authorLang,
     setChildPin: setChildPin, child: child,

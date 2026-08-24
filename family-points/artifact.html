@@ -234,6 +234,13 @@ textarea { min-height: 90px; resize: vertical; }
   display: grid; grid-template-columns: repeat(auto-fill, minmax(52px, 1fr));
   gap: 8px; margin: 8px 0;
 }
+/* There are a lot of characters to choose from, so the grid scrolls on its own
+   rather than burying the Save button under it. */
+.modal-body .avatar-grid {
+  max-height: 232px; overflow-y: auto;
+  padding: 6px; border: 1px solid var(--line); border-radius: var(--radius-sm);
+  background: var(--surface-2);
+}
 .avatar-pick {
   aspect-ratio: 1; border-radius: 50%; font-size: 1.5rem; cursor: pointer;
   border: 2px solid transparent;
@@ -646,6 +653,9 @@ nav.tabs .badge {
     "family.aboutText": "Family Points keeps everything in this browser. Use Export to make a backup or move the family to another device.",
     "family.deleteParentConfirm": "Remove this parent account?",
     "family.lastParent": "You cannot remove the last parent.",
+    "family.editParent": "Edit parent",
+    "family.keepPassword": "Leave empty to keep the current password",
+    "family.usernameTaken": "Another parent already signs in with that username",
     "family.categoryInUse": "This category still has tasks in it.",
     "family.importOk": "Backup restored",
     "family.importBad": "That is not a Family Points backup",
@@ -1015,6 +1025,9 @@ nav.tabs .badge {
     "family.aboutText": "Familiepunten bewaart alles in deze browser. Gebruik Exporteren voor een back-up of om het gezin naar een ander apparaat te verhuizen.",
     "family.deleteParentConfirm": "Dit ouderaccount verwijderen?",
     "family.lastParent": "Je kunt de laatste ouder niet verwijderen.",
+    "family.editParent": "Ouder bewerken",
+    "family.keepPassword": "Leeg laten om het huidige wachtwoord te houden",
+    "family.usernameTaken": "Een andere ouder logt al in met die gebruikersnaam",
     "family.categoryInUse": "In deze categorie staan nog taken.",
     "family.importOk": "Back-up teruggezet",
     "family.importBad": "Dat is geen Familiepunten-back-up",
@@ -1384,6 +1397,9 @@ nav.tabs .badge {
     "family.aboutText": "נקודות משפחה שומרת הכול בדפדפן הזה. השתמשו בייצוא כדי לגבות או להעביר את המשפחה למכשיר אחר.",
     "family.deleteParentConfirm": "להסיר את חשבון ההורה הזה?",
     "family.lastParent": "אי אפשר להסיר את ההורה האחרון.",
+    "family.editParent": "עריכת פרטי הורה",
+    "family.keepPassword": "השאירו ריק כדי לשמור על הסיסמה הנוכחית",
+    "family.usernameTaken": "הורה אחר כבר נכנס עם שם המשתמש הזה",
     "family.categoryInUse": "עדיין יש משימות בנושא הזה.",
     "family.importOk": "הגיבוי שוחזר",
     "family.importBad": "זה אינו גיבוי של נקודות משפחה",
@@ -1550,7 +1566,10 @@ nav.tabs .badge {
 /* ==== js/avatars.js ==== */
 /* Character list for profile pictures.
    Every avatar is an emoji on a coloured disc drawn by CSS — nothing is
-   downloaded and no artwork is copied, so the family can pick freely. */
+   downloaded and no artwork is copied, so the family can pick freely.
+
+   The colour comes from the position in the list, so two children who pick
+   neighbouring characters still get discs that tell them apart at a glance. */
 (function (global) {
   "use strict";
 
@@ -1563,16 +1582,35 @@ nav.tabs .badge {
     });
   }
 
+  /* Kept in a stable order: ids are position-based, so new characters go at
+     the end and nobody's avatar changes underneath them. */
   var KIDS = make([
+    // the classics
     "🦊", "🐼", "🦁", "🐯", "🐨", "🐸", "🦄", "🐙", "🐳", "🦖",
     "🐝", "🦉", "🐢", "🦋", "🐧", "🦔", "🐰", "🐶", "🐱", "🐵",
     "🤖", "👾", "🚀", "🌟", "🌈", "🍀", "🐲", "🦕", "🐬", "🦩",
-    "🦜", "🐞", "🦭", "🐺", "🦥", "🐷"
+    "🦜", "🐞", "🦭", "🐺", "🦥", "🐷",
+    // more animals
+    "🐮", "🐭", "🐹", "🐻", "🦝", "🦡", "🦫", "🦦", "🦘", "🦙",
+    "🦌", "🐴", "🦓", "🦒", "🐘", "🦏", "🦛", "🐑", "🐐", "🐓",
+    "🐣", "🦆", "🦢", "🦚", "🕊️", "🦅", "🦇", "🐗", "🐿️", "🦈",
+    "🐡", "🦑", "🦐", "🦀", "🐊", "🐍", "🦎", "🐌", "🐜", "🦗",
+    // creatures and heroes
+    "👽", "🦸", "🦹", "🧙", "🧚", "🧜", "🧝", "🧞", "🥷", "🤠",
+    "👻", "🎃", "⛄", "🛸",
+    // things to be
+    "⚽", "🏀", "🎾", "🎸", "🥁", "🎨", "🎭", "🎬", "📚", "🎯",
+    "🚲", "🛹", "🎢", "🏆", "🌵", "🍄", "🌻", "🌊", "⚡", "🔥",
+    "💎", "🌙", "☀️", "🍿", "🧁", "🍉", "🍭", "🐾"
   ], "k");
 
   var PARENTS = make([
     "👩", "👨", "🧑", "👩‍🦰", "👨‍🦰", "👩‍🦱", "👨‍🦱", "👵", "👴", "🧔",
-    "👩‍🦳", "👨‍🦳"
+    "👩‍🦳", "👨‍🦳",
+    // added later, so they sit after the originals
+    "👱", "👳", "👲", "🧕", "👮", "💂", "👷", "🤴", "👸", "🥷",
+    "🧙", "🦸", "🦹", "🧑‍🚀", "🧑‍🍳", "🧑‍🌾", "🧑‍🏫", "🧑‍🔧", "🧑‍🎨", "🧑‍⚕️",
+    "🎅", "🤶", "🐻", "🦁", "🦊", "🐨"
   ], "p");
 
   var ICONS = ["🧽", "🧺", "📚", "🎲", "🇳🇱", "⭐", "🛏️", "🍽️", "🦷", "🐕",
@@ -1941,6 +1979,23 @@ nav.tabs .badge {
     save();
     return true;
   }
+  /* Editing a parent. A username has to stay unique, so a clash is reported
+     rather than quietly overwriting whoever holds it. */
+  function updateParent(id, patch) {
+    var p = parent(id);
+    if (!p) return null;
+    if (patch.username !== undefined) {
+      var wanted = String(patch.username || "").trim().toLowerCase();
+      if (!wanted) return null;
+      var holder = findParent(wanted);
+      if (holder && holder.id !== id) return false;
+      patch.username = wanted;
+    }
+    Object.keys(patch).forEach(function (k) { p[k] = patch[k]; });
+    save();
+    return p;
+  }
+
   function setParentPassword(id, password) {
     var p = byId(state.parents, id);
     if (!p) return false;
@@ -2467,7 +2522,7 @@ nav.tabs .badge {
     onSave: onSave, forget: forget,
     createFamily: createFamily, emptyState: emptyState, defaultTasks: defaultTasks,
     addParent: addParent, findParent: findParent, removeParent: removeParent,
-    setParentPassword: setParentPassword, parent: parent,
+    setParentPassword: setParentPassword, updateParent: updateParent, parent: parent,
     addChild: addChild, removeChild: removeChild, updateChild: updateChild,
     setUserLang: setUserLang, addCategory: addCategory, authorLang: authorLang,
     setChildPin: setChildPin, child: child,
@@ -4406,7 +4461,7 @@ nav.tabs .badge {
         return "<li>" + U.avatar(p.avatar, 40) +
           '<div class="grow"><div class="title">' + U.name(p) + "</div>" +
           '<div class="sub">' + esc(p.username) + " · " + esc(t("lang." + (p.lang || s.settings.lang))) + "</div></div>" +
-          '<button class="icon-btn" data-act="p.parentPass" data-id="' + p.id + '">🔑</button>' +
+          '<button class="icon-btn" data-act="p.parentEdit" data-id="' + p.id + '">✏️</button>' +
           (s.parents.length > 1 ? '<button class="icon-btn" data-act="p.parentDelete" data-id="' + p.id + '">🗑️</button>' : "") +
           "</li>";
       }).join("") + "</ul></div>";
@@ -4903,57 +4958,89 @@ nav.tabs .badge {
     global.App.refresh();
   });
 
-  U.on("p.parentNew", function () {
-    editingNames = {};
+  /* Adding and editing a parent are the same form; editing simply arrives with
+     the fields filled in and leaves the password alone unless one is typed. */
+  function parentDialog(existing) {
+    var s2 = S.get();
+    editingNames = existing ? S.clone(existing.names || {}) : {};
     editingNameLang = global.I18N.lang;
-    U.modal(t("family.addParent"),
-      '<form data-act="p.parentSave">' +
+    if (existing && existing.name && !Object.keys(editingNames).length) {
+      editingNames[editingNameLang] = existing.name;
+    }
+    parentAvatar = existing ? existing.avatar : "p2";
+    parentLang = (existing && existing.lang) || s2.settings.lang;
+
+    U.modal(existing ? t("family.editParent") : t("family.addParent"),
+      '<form data-act="p.parentSave" data-id="' + (existing ? existing.id : "") + '">' +
         U.nameField({ field: "npName", label: t("setup.displayName"),
                       names: editingNames, lang: editingNameLang, action: "p.nameLang" }) +
-        '<div class="field"><label for="npUser">' + esc(t("setup.username")) + "</label><input id=\"npUser\" type=\"text\" autocapitalize=\"none\"></div>" +
-        '<div class="field"><label for="npPass">' + esc(t("setup.password")) + "</label><input id=\"npPass\" type=\"password\"></div>" +
+        '<div class="field"><label for="npUser">' + esc(t("setup.username")) + "</label>" +
+          '<input id="npUser" type="text" autocapitalize="none" value="' +
+            esc(existing ? existing.username : "") + '"></div>' +
+        '<div class="field"><label for="npPass">' + esc(existing ? t("family.newPass") : t("setup.password")) + "</label>" +
+          '<input id="npPass" type="password" autocomplete="new-password">' +
+          (existing ? '<div class="hint">' + esc(t("family.keepPassword")) + "</div>" : "") + "</div>" +
+        '<div class="field"><span class="field-label">' + esc(t("tr.yourLang")) + "</span>" +
+          langChips(parentLang, "p.parentLang") + "</div>" +
         '<div class="field"><span class="field-label">' + esc(t("common.avatar")) + "</span>" +
-          U.avatarPicker(global.AVATARS.parents, "p2", "p.parentAvatar") + "</div>" +
+          U.avatarPicker(global.AVATARS.parents, parentAvatar, "p.parentAvatar") + "</div>" +
         '<button class="btn block" type="submit">' + esc(t("common.save")) + "</button>" +
       "</form>");
-    parentAvatar = "p2";
-  });
-  var parentAvatar = "p2";
+  }
+  U.on("p.parentNew", function () { parentDialog(null); });
+  U.on("p.parentEdit", function (d) { parentDialog(S.parent(d.id)); });
+
+  var parentAvatar = "p2", parentLang = "en";
   U.on("p.parentAvatar", function (d) {
     parentAvatar = d.avatar;
     U.els(".modal-body .avatar-pick").forEach(function (b) {
       b.classList.toggle("sel", b.dataset.avatar === d.avatar);
     });
   });
+  U.on("p.parentLang", function (d, node) {
+    parentLang = d.lang;
+    U.els(".modal-body [data-act='p.parentLang']").forEach(function (b) {
+      b.classList.toggle("on", b.dataset.lang === d.lang);
+    });
+  });
+
   U.on("p.parentSave", function (d, form) {
-    var typedName = U.el("#npName", form).value.trim();
-    if (typedName) editingNames[editingNameLang] = typedName; else delete editingNames[editingNameLang];
+    var typed = U.el("#npName", form).value.trim();
+    if (typed) editingNames[editingNameLang] = typed; else delete editingNames[editingNameLang];
     var name = editingNames[editingNameLang] ||
       Object.keys(editingNames).map(function (k) { return editingNames[k]; })[0] || "";
     var user = U.el("#npUser", form).value.trim();
     var pass = U.el("#npPass", form).value;
-    if (!name || !user || pass.length < 4) return U.toast(t("setup.errParent"), "bad");
-    var added = S.addParent(name, user, pass, parentAvatar);
-    if (!added) return U.toast(t("auth.badLogin"), "bad");
-    added.names = S.clone(editingNames);
-    S.save();
+
+    if (!name || !user) return U.toast(t("setup.errParent"), "bad");
+
+    if (d.id) {
+      var saved = S.updateParent(d.id, {
+        name: name, names: S.clone(editingNames),
+        username: user, avatar: parentAvatar, lang: parentLang
+      });
+      if (saved === false) return U.toast(t("family.usernameTaken"), "bad");
+      if (!saved) return U.toast(t("common.required"), "bad");
+      if (pass) {
+        if (pass.length < 4) return U.toast(t("setup.errPassShort"), "bad");
+        S.setParentPassword(d.id, pass);
+      }
+      // editing yourself changes the language you are reading in
+      if (d.id === me().id) global.I18N.setLang(parentLang);
+    } else {
+      if (pass.length < 4) return U.toast(t("setup.errPassShort"), "bad");
+      if (S.findParent(user)) return U.toast(t("family.usernameTaken"), "bad");
+      var added = S.addParent(name, user, pass, parentAvatar);
+      if (!added) return U.toast(t("family.usernameTaken"), "bad");
+      added.names = S.clone(editingNames);
+      added.lang = parentLang;
+      S.save();
+    }
     U.closeModal();
     U.toast(t("common.saved"), "good");
     global.App.refresh();
   });
-  U.on("p.parentPass", function (d) {
-    U.modal(t("family.changePass"),
-      '<form data-act="p.parentPassSave" data-id="' + d.id + '">' +
-        '<div class="field"><label for="cpPass">' + esc(t("family.newPass")) + "</label><input id=\"cpPass\" type=\"password\"></div>" +
-        '<button class="btn block" type="submit">' + esc(t("common.save")) + "</button></form>");
-  });
-  U.on("p.parentPassSave", function (d, form) {
-    var pass = U.el("#cpPass", form).value;
-    if (pass.length < 4) return U.toast(t("setup.errPassShort"), "bad");
-    S.setParentPassword(d.id, pass);
-    U.closeModal();
-    U.toast(t("common.saved"), "good");
-  });
+
   U.on("p.parentDelete", function (d) {
     if (d.id === me().id) return U.toast(t("family.lastParent"), "bad");
     U.confirmDialog(t("family.deleteParentConfirm"), function () {

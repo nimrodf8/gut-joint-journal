@@ -658,7 +658,7 @@
         return "<li>" + U.avatar(p.avatar, 40) +
           '<div class="grow"><div class="title">' + U.name(p) + "</div>" +
           '<div class="sub">' + esc(p.username) + " · " + esc(t("lang." + (p.lang || s.settings.lang))) + "</div></div>" +
-          '<button class="icon-btn" data-act="p.parentPass" data-id="' + p.id + '">🔑</button>' +
+          '<button class="icon-btn" data-act="p.parentEdit" data-id="' + p.id + '">✏️</button>' +
           (s.parents.length > 1 ? '<button class="icon-btn" data-act="p.parentDelete" data-id="' + p.id + '">🗑️</button>' : "") +
           "</li>";
       }).join("") + "</ul></div>";
@@ -1155,57 +1155,89 @@
     global.App.refresh();
   });
 
-  U.on("p.parentNew", function () {
-    editingNames = {};
+  /* Adding and editing a parent are the same form; editing simply arrives with
+     the fields filled in and leaves the password alone unless one is typed. */
+  function parentDialog(existing) {
+    var s2 = S.get();
+    editingNames = existing ? S.clone(existing.names || {}) : {};
     editingNameLang = global.I18N.lang;
-    U.modal(t("family.addParent"),
-      '<form data-act="p.parentSave">' +
+    if (existing && existing.name && !Object.keys(editingNames).length) {
+      editingNames[editingNameLang] = existing.name;
+    }
+    parentAvatar = existing ? existing.avatar : "p2";
+    parentLang = (existing && existing.lang) || s2.settings.lang;
+
+    U.modal(existing ? t("family.editParent") : t("family.addParent"),
+      '<form data-act="p.parentSave" data-id="' + (existing ? existing.id : "") + '">' +
         U.nameField({ field: "npName", label: t("setup.displayName"),
                       names: editingNames, lang: editingNameLang, action: "p.nameLang" }) +
-        '<div class="field"><label for="npUser">' + esc(t("setup.username")) + "</label><input id=\"npUser\" type=\"text\" autocapitalize=\"none\"></div>" +
-        '<div class="field"><label for="npPass">' + esc(t("setup.password")) + "</label><input id=\"npPass\" type=\"password\"></div>" +
+        '<div class="field"><label for="npUser">' + esc(t("setup.username")) + "</label>" +
+          '<input id="npUser" type="text" autocapitalize="none" value="' +
+            esc(existing ? existing.username : "") + '"></div>' +
+        '<div class="field"><label for="npPass">' + esc(existing ? t("family.newPass") : t("setup.password")) + "</label>" +
+          '<input id="npPass" type="password" autocomplete="new-password">' +
+          (existing ? '<div class="hint">' + esc(t("family.keepPassword")) + "</div>" : "") + "</div>" +
+        '<div class="field"><span class="field-label">' + esc(t("tr.yourLang")) + "</span>" +
+          langChips(parentLang, "p.parentLang") + "</div>" +
         '<div class="field"><span class="field-label">' + esc(t("common.avatar")) + "</span>" +
-          U.avatarPicker(global.AVATARS.parents, "p2", "p.parentAvatar") + "</div>" +
+          U.avatarPicker(global.AVATARS.parents, parentAvatar, "p.parentAvatar") + "</div>" +
         '<button class="btn block" type="submit">' + esc(t("common.save")) + "</button>" +
       "</form>");
-    parentAvatar = "p2";
-  });
-  var parentAvatar = "p2";
+  }
+  U.on("p.parentNew", function () { parentDialog(null); });
+  U.on("p.parentEdit", function (d) { parentDialog(S.parent(d.id)); });
+
+  var parentAvatar = "p2", parentLang = "en";
   U.on("p.parentAvatar", function (d) {
     parentAvatar = d.avatar;
     U.els(".modal-body .avatar-pick").forEach(function (b) {
       b.classList.toggle("sel", b.dataset.avatar === d.avatar);
     });
   });
+  U.on("p.parentLang", function (d, node) {
+    parentLang = d.lang;
+    U.els(".modal-body [data-act='p.parentLang']").forEach(function (b) {
+      b.classList.toggle("on", b.dataset.lang === d.lang);
+    });
+  });
+
   U.on("p.parentSave", function (d, form) {
-    var typedName = U.el("#npName", form).value.trim();
-    if (typedName) editingNames[editingNameLang] = typedName; else delete editingNames[editingNameLang];
+    var typed = U.el("#npName", form).value.trim();
+    if (typed) editingNames[editingNameLang] = typed; else delete editingNames[editingNameLang];
     var name = editingNames[editingNameLang] ||
       Object.keys(editingNames).map(function (k) { return editingNames[k]; })[0] || "";
     var user = U.el("#npUser", form).value.trim();
     var pass = U.el("#npPass", form).value;
-    if (!name || !user || pass.length < 4) return U.toast(t("setup.errParent"), "bad");
-    var added = S.addParent(name, user, pass, parentAvatar);
-    if (!added) return U.toast(t("auth.badLogin"), "bad");
-    added.names = S.clone(editingNames);
-    S.save();
+
+    if (!name || !user) return U.toast(t("setup.errParent"), "bad");
+
+    if (d.id) {
+      var saved = S.updateParent(d.id, {
+        name: name, names: S.clone(editingNames),
+        username: user, avatar: parentAvatar, lang: parentLang
+      });
+      if (saved === false) return U.toast(t("family.usernameTaken"), "bad");
+      if (!saved) return U.toast(t("common.required"), "bad");
+      if (pass) {
+        if (pass.length < 4) return U.toast(t("setup.errPassShort"), "bad");
+        S.setParentPassword(d.id, pass);
+      }
+      // editing yourself changes the language you are reading in
+      if (d.id === me().id) global.I18N.setLang(parentLang);
+    } else {
+      if (pass.length < 4) return U.toast(t("setup.errPassShort"), "bad");
+      if (S.findParent(user)) return U.toast(t("family.usernameTaken"), "bad");
+      var added = S.addParent(name, user, pass, parentAvatar);
+      if (!added) return U.toast(t("family.usernameTaken"), "bad");
+      added.names = S.clone(editingNames);
+      added.lang = parentLang;
+      S.save();
+    }
     U.closeModal();
     U.toast(t("common.saved"), "good");
     global.App.refresh();
   });
-  U.on("p.parentPass", function (d) {
-    U.modal(t("family.changePass"),
-      '<form data-act="p.parentPassSave" data-id="' + d.id + '">' +
-        '<div class="field"><label for="cpPass">' + esc(t("family.newPass")) + "</label><input id=\"cpPass\" type=\"password\"></div>" +
-        '<button class="btn block" type="submit">' + esc(t("common.save")) + "</button></form>");
-  });
-  U.on("p.parentPassSave", function (d, form) {
-    var pass = U.el("#cpPass", form).value;
-    if (pass.length < 4) return U.toast(t("setup.errPassShort"), "bad");
-    S.setParentPassword(d.id, pass);
-    U.closeModal();
-    U.toast(t("common.saved"), "good");
-  });
+
   U.on("p.parentDelete", function (d) {
     if (d.id === me().id) return U.toast(t("family.lastParent"), "bad");
     U.confirmDialog(t("family.deleteParentConfirm"), function () {
