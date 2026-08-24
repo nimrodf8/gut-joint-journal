@@ -121,6 +121,7 @@ header.bar .wrap { display: flex; align-items: center; gap: 10px; padding: 10px 
 .bar-title strong { display: block; font-size: .98rem; line-height: 1.2; }
 .bar-title small { font-size: .74rem; }
 .bar-actions { display: flex; gap: 6px; align-items: center; }
+.sync-dot { font-size: .72rem; line-height: 1; }
 
 /* ---------- cards ---------- */
 .card {
@@ -499,6 +500,34 @@ nav.tabs .badge {
     "setup.errPin": "The PIN must be exactly 4 digits",
     "setup.haveFamily": "Already set this family up somewhere else?",
     "setup.restore": "Restore from a backup",
+    "setup.joinFamily": "Join with an invite link",
+
+    "sync.title": "One family on every device",
+    "sync.hint": "Turn this on and the family lives on a small server instead of only in this browser. Points, tasks and notes reach every phone, tablet and computer within seconds.",
+    "sync.off": "Off — this device keeps its own copy",
+    "sync.idle": "Everything is in sync",
+    "sync.syncing": "Syncing…",
+    "sync.offline": "Cannot reach the server — will keep trying",
+    "sync.error": "This family is not on the server any more",
+    "sync.connect": "Turn on syncing",
+    "sync.working": "Setting things up…",
+    "sync.disconnect": "Stop syncing on this device",
+    "sync.disconnectWarn": "This device keeps the family it has now, but stops sending and receiving changes. The other devices carry on.",
+    "sync.invite": "Invite link",
+    "sync.inviteHint": "Send this to the family. Whoever opens it joins this family on their own device. Anyone with the link is in, so treat it like a key to the house.",
+    "sync.copyLink": "Copy the link",
+    "sync.linkCopied": "Link copied",
+    "sync.join": "Join a family",
+    "sync.joinHint": "Paste the invite link a parent sent you.",
+    "sync.joinBtn": "Join this family",
+    "sync.joinBad": "That invite link does not work",
+    "sync.joinReplace": "Join {name}? What is on this device now is replaced by that family.",
+    "sync.joined": "You are in — {name}",
+    "sync.invited": "You have been invited to join {name}",
+    "sync.lastSync": "Last synced {when}",
+    "sync.never": "not yet",
+    "sync.now": "Sync now",
+    "sync.privacy": "Only people with the invite link can reach your family. The family is stored on the server as one document; nothing else about your devices is sent.",
 
     "auth.parentTab": "Parent",
     "auth.childTab": "Child",
@@ -831,6 +860,34 @@ nav.tabs .badge {
     "setup.errPin": "De pincode moet precies 4 cijfers zijn",
     "setup.haveFamily": "Dit gezin ergens anders al ingesteld?",
     "setup.restore": "Terugzetten uit een back-up",
+    "setup.joinFamily": "Meedoen met een uitnodigingslink",
+
+    "sync.title": "Eén gezin op elk apparaat",
+    "sync.hint": "Zet dit aan en het gezin staat op een kleine server in plaats van alleen in deze browser. Punten, taken en notities bereiken binnen enkele seconden elke telefoon, tablet en computer.",
+    "sync.off": "Uit — dit apparaat houdt zijn eigen kopie",
+    "sync.idle": "Alles is gesynchroniseerd",
+    "sync.syncing": "Bezig met synchroniseren…",
+    "sync.offline": "Server niet bereikbaar — we blijven het proberen",
+    "sync.error": "Dit gezin staat niet meer op de server",
+    "sync.connect": "Synchroniseren aanzetten",
+    "sync.working": "Bezig met instellen…",
+    "sync.disconnect": "Synchroniseren stoppen op dit apparaat",
+    "sync.disconnectWarn": "Dit apparaat houdt het gezin dat het nu heeft, maar stuurt en ontvangt geen wijzigingen meer. De andere apparaten gaan gewoon door.",
+    "sync.invite": "Uitnodigingslink",
+    "sync.inviteHint": "Stuur deze naar het gezin. Wie hem opent, doet mee met dit gezin op zijn eigen apparaat. Iedereen met de link is binnen, dus behandel hem als een huissleutel.",
+    "sync.copyLink": "Link kopiëren",
+    "sync.linkCopied": "Link gekopieerd",
+    "sync.join": "Meedoen met een gezin",
+    "sync.joinHint": "Plak de uitnodigingslink die een ouder je heeft gestuurd.",
+    "sync.joinBtn": "Meedoen met dit gezin",
+    "sync.joinBad": "Die uitnodigingslink werkt niet",
+    "sync.joinReplace": "Meedoen met {name}? Wat nu op dit apparaat staat, wordt vervangen door dat gezin.",
+    "sync.joined": "Je doet mee — {name}",
+    "sync.invited": "Je bent uitgenodigd voor {name}",
+    "sync.lastSync": "Laatst gesynchroniseerd {when}",
+    "sync.never": "nog niet",
+    "sync.now": "Nu synchroniseren",
+    "sync.privacy": "Alleen mensen met de uitnodigingslink komen bij jullie gezin. Het gezin staat als één document op de server; verder wordt er niets over je apparaten verstuurd.",
 
     "auth.parentTab": "Ouder",
     "auth.childTab": "Kind",
@@ -1163,6 +1220,34 @@ nav.tabs .badge {
     "setup.errPin": "הקוד חייב להיות בדיוק 4 ספרות",
     "setup.haveFamily": "כבר הקמתם את המשפחה הזאת במקום אחר?",
     "setup.restore": "שחזור מגיבוי",
+    "setup.joinFamily": "הצטרפות עם קישור הזמנה",
+
+    "sync.title": "משפחה אחת בכל המכשירים",
+    "sync.hint": "כשמפעילים, המשפחה נשמרת בשרת קטן ולא רק בדפדפן הזה. נקודות, משימות והערות מגיעות לכל טלפון, טאבלט ומחשב תוך שניות.",
+    "sync.off": "כבוי — המכשיר הזה מחזיק עותק משלו",
+    "sync.idle": "הכול מסונכרן",
+    "sync.syncing": "מסנכרן…",
+    "sync.offline": "אין גישה לשרת — ננסה שוב",
+    "sync.error": "המשפחה הזאת כבר לא נמצאת בשרת",
+    "sync.connect": "הפעלת סנכרון",
+    "sync.working": "מקימים…",
+    "sync.disconnect": "עצירת הסנכרון במכשיר הזה",
+    "sync.disconnectWarn": "המכשיר הזה ישמור את המשפחה כפי שהיא כרגע, אבל יפסיק לשלוח ולקבל שינויים. שאר המכשירים ימשיכו כרגיל.",
+    "sync.invite": "קישור הזמנה",
+    "sync.inviteHint": "שלחו אותו למשפחה. כל מי שיפתח אותו מצטרף למשפחה הזאת מהמכשיר שלו. כל מי שיש לו את הקישור נכנס — התייחסו אליו כמו למפתח לבית.",
+    "sync.copyLink": "העתקת הקישור",
+    "sync.linkCopied": "הקישור הועתק",
+    "sync.join": "הצטרפות למשפחה",
+    "sync.joinHint": "הדביקו את קישור ההזמנה שקיבלתם מהורה.",
+    "sync.joinBtn": "הצטרפות למשפחה הזאת",
+    "sync.joinBad": "קישור ההזמנה הזה לא עובד",
+    "sync.joinReplace": "להצטרף ל{name}? מה שנמצא כרגע במכשיר הזה יוחלף במשפחה הזאת.",
+    "sync.joined": "הצטרפתם — {name}",
+    "sync.invited": "הוזמנתם להצטרף ל{name}",
+    "sync.lastSync": "סונכרן לאחרונה {when}",
+    "sync.never": "עדיין לא",
+    "sync.now": "סנכרון עכשיו",
+    "sync.privacy": "רק מי שיש לו את קישור ההזמנה מגיע למשפחה שלכם. המשפחה נשמרת בשרת כמסמך אחד; שום דבר אחר על המכשירים שלכם לא נשלח.",
 
     "auth.parentTab": "הורה",
     "auth.childTab": "ילד/ה",
@@ -1704,7 +1789,9 @@ nav.tabs .badge {
       ledger: [],
       claims: [],
       movieNights: [],
-      redemptions: []
+      redemptions: [],
+      deleted: {},
+      savedAt: now()
     };
   }
 
@@ -1718,16 +1805,32 @@ nav.tabs .badge {
     if (state) migrate(state);
     return state;
   }
+  var saveHooks = [];
+  function onSave(fn) { saveHooks.push(fn); }
+
   function save() {
+    state.savedAt = now();
     try { global.localStorage.setItem(KEY, JSON.stringify(state)); }
     catch (e) { /* quota or private mode — the UI stays usable for this session */ }
+    saveHooks.forEach(function (fn) { try { fn(state); } catch (e) {} });
     return state;
+  }
+
+  /* Deleting has to be remembered, not just done: another device still holds
+     the thing, and without a record of the deletion a merge would bring it
+     back. The id is enough — what it pointed at is already gone. */
+  function forget(id) {
+    if (!id) return;
+    if (!state.deleted) state.deleted = {};
+    state.deleted[id] = now();
   }
   function migrate(s) {
     if (!s.claims) s.claims = [];
     if (!s.movieNights) s.movieNights = [];
     if (!s.rewards) s.rewards = defaultRewards();
     if (!s.redemptions) s.redemptions = [];
+    if (!s.deleted) s.deleted = {};
+    if (!s.savedAt) s.savedAt = s.createdAt || now();
     s.claims.forEach(function (c) { if (!c.kind) c.kind = "task"; });
     /* Family outings used to be the only reward, driven by one goal number.
        They become entries in the rewards catalogue so they can be edited. */
@@ -1814,6 +1917,7 @@ nav.tabs .badge {
   }
   function removeParent(id) {
     if (state.parents.length <= 1) return false;
+    forget(id);
     state.parents = state.parents.filter(function (p) { return p.id !== id; });
     save();
     return true;
@@ -1848,6 +1952,10 @@ nav.tabs .badge {
     return c;
   }
   function removeChild(id) {
+    forget(id);
+    (child(id) || { notes: [] }).notes.concat((child(id) || {}).gifts || [], (child(id) || {}).outings || [])
+      .forEach(function (i) { forget(i.id); });
+    state.ledger.forEach(function (l) { if (l.childId === id) forget(l.id); });
     state.children = state.children.filter(function (c) { return c.id !== id; });
     state.ledger = state.ledger.filter(function (l) { return l.childId !== id; });
     state.claims = state.claims.filter(function (c) { return c.childId !== id; });
@@ -1944,6 +2052,7 @@ nav.tabs .badge {
     return cat;
   }
   function deleteTask(id) {
+    forget(id);
     state.tasks = state.tasks.filter(function (t) { return t.id !== id; });
     state.claims = state.claims.filter(function (c) { return c.taskId !== id; });
     save();
@@ -1984,6 +2093,7 @@ nav.tabs .badge {
     return data;
   }
   function deleteReward(id) {
+    forget(id);
     state.rewards = state.rewards.filter(function (r) { return r.id !== id; });
     state.claims = state.claims.filter(function (c) { return c.rewardId !== id; });
     save();
@@ -2271,6 +2381,7 @@ nav.tabs .badge {
   function removeListItem(childId, field, itemId) {
     var c = child(childId);
     if (!c || !c[field]) return;
+    forget(itemId);
     c[field] = c[field].filter(function (i) { return i.id !== itemId; });
     save();
   }
@@ -2301,6 +2412,7 @@ nav.tabs .badge {
   global.Store = {
     KEY: KEY, START_POINTS: START_POINTS,
     load: load, save: save, get: get, exists: exists, replace: replace, wipe: wipe,
+    onSave: onSave, forget: forget,
     createFamily: createFamily, emptyState: emptyState, defaultTasks: defaultTasks,
     addParent: addParent, findParent: findParent, removeParent: removeParent,
     setParentPassword: setParentPassword, parent: parent,
@@ -2553,6 +2665,365 @@ nav.tabs .badge {
     of: of, detect: detect, prepare: prepare, status: status,
     supported: supported, enabled: enabled, invalidate: invalidate,
     pairsInUse: pairsInUse
+  };
+})(window);
+
+/* ==== js/sync.js ==== */
+/* Keeping one family on several devices.
+
+   The server holds a single document per family and hands out a revision
+   number with it. A device may only write onto the revision it started from;
+   if it is behind, the server refuses and returns what it has, the device
+   merges the two and tries again. Nothing is ever overwritten blind.
+
+   The merge is built around what a family app actually does: points, claims and
+   rewards are append-only, so both sides' entries are kept. Editable things
+   (tasks, rewards, children, settings) take the more recently saved side, and
+   deletions are remembered as tombstones so a deleted task cannot crawl back
+   from a device that still had it.
+
+   Syncing is off until someone turns it on. Until then nothing leaves the
+   device, exactly as before. */
+(function (global) {
+  "use strict";
+
+  /* Point this somewhere else — before the script loads, or by editing here —
+     to run the family on your own server instead. */
+  var SERVER = global.FP_SYNC_SERVER || {
+    url: "https://ylynavjvpzikqvipfmxq.supabase.co",
+    // A publishable key. It permits nothing on its own: the table is not
+    // reachable through the API, and every function demands the family's id
+    // together with its secret.
+    key: "sb_publishable_IqPF_8WqcKiJOQv15HtbDg_PMrhdJdu"
+  };
+
+  var CONF_KEY = "familyPoints.sync";
+  var PUSH_DELAY = 1500;      // let a burst of edits settle before sending
+  var POLL_EVERY = 20000;
+
+  var conf = null;            // {id, secret, rev, lastSyncAt}
+  var state = "off";          // off | idle | syncing | offline | error
+  var pushTimer = null, pollTimer = null;
+  var busy = false, again = false;
+  var listeners = [];
+
+  /* ---------------- configuration ---------------- */
+
+  function loadConf() {
+    try { conf = JSON.parse(global.localStorage.getItem(CONF_KEY) || "null"); }
+    catch (e) { conf = null; }
+    state = conf ? "idle" : "off";
+    return conf;
+  }
+  function saveConf() {
+    try {
+      if (conf) global.localStorage.setItem(CONF_KEY, JSON.stringify(conf));
+      else global.localStorage.removeItem(CONF_KEY);
+    } catch (e) {}
+  }
+  function connected() { return !!(conf && conf.id && conf.secret); }
+  function status() {
+    return { state: state, connected: connected(), lastSyncAt: conf && conf.lastSyncAt };
+  }
+  function onChange(fn) { listeners.push(fn); }
+  function announce() { listeners.forEach(function (fn) { try { fn(status()); } catch (e) {} }); }
+  function setState(s) { if (state !== s) { state = s; announce(); } }
+
+  /* ---------------- talking to the server ---------------- */
+
+  function rpc(name, params) {
+    return global.fetch(SERVER.url + "/rest/v1/rpc/" + name, {
+      method: "POST",
+      headers: {
+        "apikey": SERVER.key,
+        "Authorization": "Bearer " + SERVER.key,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify(params)
+    }).then(function (res) {
+      return res.text().then(function (text) {
+        var body = null;
+        try { body = text ? JSON.parse(text) : null; } catch (e) {}
+        if (!res.ok) {
+          var err = new Error((body && body.message) || ("http_" + res.status));
+          err.code = (body && body.message) || String(res.status);
+          throw err;
+        }
+        return Array.isArray(body) ? body[0] : body;
+      });
+    });
+  }
+
+  /* ---------------- merging two versions of a family ---------------- */
+
+  function tombstones(a, b) {
+    var out = {};
+    [a && a.deleted, b && b.deleted].forEach(function (map) {
+      if (map) Object.keys(map).forEach(function (id) { out[id] = map[id]; });
+    });
+    return out;
+  }
+
+  /* First list wins on ids present in both; anything deleted anywhere is left
+     out. Order follows the first list, with the second's extras appended. */
+  function unionById(first, second, gone) {
+    var out = [], seen = {};
+    (first || []).concat(second || []).forEach(function (item) {
+      if (!item || !item.id || seen[item.id] || gone[item.id]) return;
+      seen[item.id] = true;
+      out.push(item);
+    });
+    return out;
+  }
+
+  /* A claim that has been decided beats the same claim still pending, whichever
+     side it came from — an approval must never be undone by a stale copy. */
+  function mergeClaims(a, b, gone) {
+    var by = {}, order = [];
+    (a || []).concat(b || []).forEach(function (c) {
+      if (!c || !c.id || gone[c.id]) return;
+      var held = by[c.id];
+      if (!held) { by[c.id] = c; order.push(c.id); return; }
+      if (held.status === "pending" && c.status !== "pending") by[c.id] = c;
+    });
+    return order.map(function (id) { return by[id]; });
+  }
+
+  /* Children are edited in place, but the lists they carry are written to from
+     any device, so those are unioned rather than taken from one side. */
+  function mergeChildren(base, other, gone) {
+    var others = {};
+    (other || []).forEach(function (c) { others[c.id] = c; });
+    return unionById(base, other, gone).map(function (c) {
+      var twin = others[c.id];
+      if (!twin || twin === c) return c;
+      var merged = JSON.parse(JSON.stringify(c));
+      ["notes", "gifts", "outings"].forEach(function (field) {
+        merged[field] = unionById(c[field], twin[field], gone);
+      });
+      return merged;
+    });
+  }
+
+  /* The more recently saved side is the base for everything that is edited in
+     place; the append-only collections then take entries from both. */
+  function merge(local, remote) {
+    if (!remote) return local;
+    if (!local) return remote;
+    var base = (local.savedAt || "") >= (remote.savedAt || "") ? local : remote;
+    var other = base === local ? remote : local;
+    var gone = tombstones(local, remote);
+
+    var out = JSON.parse(JSON.stringify(base));
+    out.deleted = gone;
+    out.parents = unionById(base.parents, other.parents, gone);
+    out.children = mergeChildren(base.children, other.children, gone);
+    out.categories = unionById(base.categories, other.categories, gone);
+    out.tasks = unionById(base.tasks, other.tasks, gone);
+    out.rewards = unionById(base.rewards, other.rewards, gone);
+    out.claims = mergeClaims(local.claims, remote.claims, gone);
+    out.movieNights = unionById(base.movieNights, other.movieNights, gone);
+    out.redemptions = unionById(base.redemptions, other.redemptions, gone);
+
+    out.ledger = unionById(local.ledger, remote.ledger, gone).filter(function (l) {
+      return !l.childId || !gone[l.childId];
+    }).sort(function (x, y) { return x.ts < y.ts ? -1 : x.ts > y.ts ? 1 : 0; });
+
+    return out;
+  }
+
+  /* ---------------- the sync itself ---------------- */
+
+  function docNow() { return global.Store.get(); }
+
+  /* One round: push what we have; if the server has moved on, merge its
+     version in and push again. Three attempts is plenty for a family. */
+  function sync(attempt) {
+    if (!connected()) return Promise.resolve(false);
+    attempt = attempt || 1;
+    setState("syncing");
+
+    var mine = docNow();
+    return rpc("fp_push", {
+      p_id: conf.id, p_secret: conf.secret,
+      p_doc: mine, p_base_rev: conf.rev || 0
+    }).then(function (res) {
+      if (!res) throw new Error("empty_response");
+      if (res.ok) {
+        conf.rev = res.rev;
+        conf.lastSyncAt = new Date().toISOString();
+        saveConf();
+        setState("idle");
+        return true;
+      }
+      // Behind: fold the server's version into ours and try once more.
+      var merged = merge(mine, res.doc);
+      conf.rev = res.rev;
+      saveConf();
+      global.Store.replace(merged);
+      if (global.App && global.App.refresh) global.App.refresh();
+      if (attempt >= 3) { setState("error"); return false; }
+      return sync(attempt + 1);
+    }).catch(function (err) {
+      setState(err && err.code === "no_such_family" ? "error" : "offline");
+      return false;
+    });
+  }
+
+  /* Pull on its own, for when this device has been sitting idle. */
+  function refresh() {
+    if (!connected()) return Promise.resolve(false);
+    setState("syncing");
+    return rpc("fp_pull", { p_id: conf.id, p_secret: conf.secret })
+      .then(function (res) {
+        if (!res) throw new Error("empty_response");
+        var mine = docNow();
+        var merged = merge(mine, res.doc);
+        var changed = JSON.stringify(merged) !== JSON.stringify(mine);
+        conf.rev = res.rev;
+        conf.lastSyncAt = new Date().toISOString();
+        saveConf();
+        if (changed) {
+          global.Store.replace(merged);
+          if (global.App && global.App.refresh) global.App.refresh();
+        }
+        setState("idle");
+        // Our side may hold entries the server has not seen.
+        if (JSON.stringify(merged) !== JSON.stringify(res.doc)) return sync();
+        return changed;
+      })
+      .catch(function (err) {
+        setState(err && err.code === "no_such_family" ? "error" : "offline");
+        return false;
+      });
+  }
+
+  /* One round at a time. A round that arrives while another is in flight is
+     remembered and run afterwards — but only if the server is actually
+     reachable, otherwise a device with no signal would spin instead of waiting
+     for the next poll. */
+  function run(fn) {
+    if (busy) { again = true; return Promise.resolve(false); }
+    busy = true;
+    return fn().then(function (r) {
+      busy = false;
+      var reachable = state !== "offline" && state !== "error";
+      if (again) { again = false; if (reachable) run(fn); }
+      return r;
+    }, function () { busy = false; again = false; return false; });
+  }
+
+  function schedulePush() {
+    if (!connected()) return;
+    clearTimeout(pushTimer);
+    pushTimer = setTimeout(function () { run(function () { return sync(); }); }, PUSH_DELAY);
+  }
+
+  /* A poll that lands mid-edit would yank the ground from under a dialog, so
+     it waits for the dialog to close. */
+  function pollNow() {
+    var modal = global.document && global.document.getElementById("modal");
+    if (modal && modal.classList.contains("open")) return;
+    run(refresh);
+  }
+
+  function startTimers() {
+    clearInterval(pollTimer);
+    if (!connected()) return;
+    pollTimer = setInterval(pollNow, POLL_EVERY);
+  }
+
+  /* ---------------- turning it on ---------------- */
+
+  function makeSecret() {
+    var alphabet = "abcdefghijkmnpqrstuvwxyz23456789";
+    var out = "";
+    var bytes = new Uint8Array(24);
+    if (global.crypto && global.crypto.getRandomValues) global.crypto.getRandomValues(bytes);
+    else for (var j = 0; j < bytes.length; j++) bytes[j] = Math.floor(Math.random() * 256);
+    for (var i = 0; i < bytes.length; i++) out += alphabet[bytes[i] % alphabet.length];
+    return out;
+  }
+
+  function connect() {
+    var secret = makeSecret();
+    return rpc("fp_create", { p_secret: secret, p_doc: docNow() })
+      .then(function (res) {
+        conf = { id: res.id, secret: secret, rev: res.rev, lastSyncAt: new Date().toISOString() };
+        saveConf();
+        setState("idle");
+        startTimers();
+        return invite();
+      });
+  }
+
+  function invite() {
+    if (!connected()) return "";
+    var base = global.location.href.split("#")[0];
+    return base + "#join=" + conf.id + "." + conf.secret;
+  }
+
+  function parseInvite(text) {
+    var raw = String(text || "").trim();
+    var at = raw.indexOf("#join=");
+    if (at !== -1) raw = raw.slice(at + 6);
+    var dot = raw.indexOf(".");
+    if (dot < 1) return null;
+    var id = raw.slice(0, dot).trim(), secret = raw.slice(dot + 1).trim();
+    if (!/^[0-9a-f-]{36}$/i.test(id) || secret.length < 12) return null;
+    return { id: id, secret: secret };
+  }
+
+  /* Joining replaces what is on this device, so the caller confirms first. */
+  function join(text) {
+    var parsed = parseInvite(text);
+    if (!parsed) return Promise.reject(new Error("bad_invite"));
+    return rpc("fp_pull", { p_id: parsed.id, p_secret: parsed.secret })
+      .then(function (res) {
+        if (!res || !res.doc) throw new Error("bad_invite");
+        conf = { id: parsed.id, secret: parsed.secret, rev: res.rev, lastSyncAt: new Date().toISOString() };
+        saveConf();
+        global.Store.replace(res.doc);
+        setState("idle");
+        startTimers();
+        return res.doc;
+      });
+  }
+
+  function peek(text) {
+    var parsed = parseInvite(text);
+    if (!parsed) return Promise.reject(new Error("bad_invite"));
+    return rpc("fp_pull", { p_id: parsed.id, p_secret: parsed.secret });
+  }
+
+  function disconnect() {
+    conf = null;
+    saveConf();
+    clearInterval(pollTimer);
+    clearTimeout(pushTimer);
+    setState("off");
+  }
+
+  /* ---------------- wiring ---------------- */
+
+  function start() {
+    loadConf();
+    global.Store.onSave(schedulePush);
+    startTimers();
+    if (connected()) run(refresh);
+    if (global.document) {
+      global.document.addEventListener("visibilitychange", function () {
+        if (!global.document.hidden) pollNow();
+      });
+      global.addEventListener("online", pollNow);
+    }
+  }
+
+  global.Sync = {
+    start: start, connect: connect, join: join, peek: peek, disconnect: disconnect,
+    invite: invite, parseInvite: parseInvite, status: status, onChange: onChange,
+    syncNow: function () { return run(refresh); },
+    merge: merge, connected: connected
   };
 })(window);
 
@@ -2828,7 +3299,8 @@ nav.tabs .badge {
       '<button class="btn block mt" data-act="setup.next">' + esc(t("common.next")) + " →</button>" +
       '<hr style="border:none;border-top:1px solid var(--line);margin:18px 0">' +
       '<p class="hint" style="margin-top:0">' + esc(t("setup.haveFamily")) + "</p>" +
-      '<button class="btn ghost block" data-act="app.restore">⬆️ ' + esc(t("setup.restore")) + "</button>";
+      '<button class="btn ghost block" data-act="app.join">🔗 ' + esc(t("setup.joinFamily")) + "</button>" +
+      '<button class="btn ghost block mt" data-act="app.restore">⬆️ ' + esc(t("setup.restore")) + "</button>";
   }
 
   function stepParent() {
@@ -3010,6 +3482,7 @@ nav.tabs .badge {
         (loginTab === "parent" ? parentLoginForm() : childLoginGrid(s)) +
       "</div>" +
       '<div class="center">' +
+        '<button class="btn ghost small" data-act="app.join">🔗 ' + esc(t("setup.joinFamily")) + "</button> " +
         '<button class="btn ghost small" data-act="app.restore">⬆️ ' + esc(t("setup.restore")) + "</button></div>" +
       '<div class="center"><div class="chips" style="justify-content:center">' +
         global.I18N.langs.map(function (l) {
@@ -3766,6 +4239,7 @@ nav.tabs .badge {
           '<button class="icon-btn" data-act="p.catDelete" data-id="' + c.id + '">🗑️</button></li>';
       }).join("") + "</ul></div>";
 
+    html += syncCard();
     html += translationCard();
 
     html += '<div class="section-title">' + esc(t("family.data")) + "</div>" +
@@ -3785,6 +4259,35 @@ nav.tabs .badge {
         '" data-act="' + action + '" data-lang="' + l.code + '"' + (extra || "") + ">" +
         l.flag + " " + esc(l.label) + "</button>";
     }).join("") + "</div>";
+  }
+
+  function syncCard() {
+    var st = global.Sync.status();
+    var line = !st.connected ? t("sync.off") : t("sync." + (st.state === "off" ? "idle" : st.state));
+    var dot = !st.connected ? "⚪"
+            : st.state === "syncing" ? "🔄"
+            : st.state === "offline" ? "🟠"
+            : st.state === "error" ? "🔴" : "🟢";
+
+    var body = '<small>' + esc(t("sync.hint")) + "</small>" +
+      '<div class="kv"><span class="k">' + esc(t("common.status")) + "</span><span>" +
+        dot + " " + esc(line) + "</span></div>";
+
+    if (st.connected) {
+      body += '<div class="kv"><span class="k">' + esc(t("sync.lastSync", { when: "" }).replace("{when}", "")) +
+        "</span><span>" + esc(st.lastSyncAt ? U.fmtDateTime(st.lastSyncAt) : t("sync.never")) + "</span></div>" +
+        '<div class="row gap mt">' +
+          '<button class="btn grow" data-act="p.syncInvite">🔗 ' + esc(t("sync.invite")) + "</button>" +
+          '<button class="btn ghost" data-act="p.syncNow">' + esc(t("sync.now")) + "</button>" +
+        "</div>" +
+        '<button class="btn ghost block mt" data-act="p.syncOff">' + esc(t("sync.disconnect")) + "</button>";
+    } else {
+      body += '<button class="btn block mt" data-act="p.syncOn">☁️ ' + esc(t("sync.connect")) + "</button>" +
+        '<button class="btn ghost block mt" data-act="app.join">' + esc(t("sync.join")) + "</button>";
+    }
+
+    return '<div class="section-title">' + esc(t("sync.title")) + "</div>" +
+      '<div class="card">' + body + '<div class="hint">' + esc(t("sync.privacy")) + "</div></div>";
   }
 
   function translationCard() {
@@ -4120,6 +4623,49 @@ nav.tabs .badge {
     U.els(".modal-body [data-act='p.childLang']").forEach(function (b) { b.classList.remove("on"); });
     node.classList.add("on");
   });
+  U.on("p.syncOn", function () {
+    U.toast(t("sync.working"));
+    global.Sync.connect().then(function () {
+      global.App.refresh();
+      inviteDialog();
+    }).catch(function () { U.toast(t("sync.offline"), "bad"); });
+  });
+  U.on("p.syncNow", function () {
+    U.toast(t("sync.syncing"));
+    global.Sync.syncNow().then(function () { global.App.refresh(); });
+  });
+  U.on("p.syncOff", function () {
+    U.confirmDialog(t("sync.disconnectWarn"), function () {
+      global.Sync.disconnect();
+      global.App.refresh();
+    });
+  });
+  U.on("p.syncInvite", inviteDialog);
+
+  function inviteDialog() {
+    var link = global.Sync.invite();
+    U.modal(t("sync.invite"),
+      '<p class="hint">' + esc(t("sync.inviteHint")) + "</p>" +
+      '<textarea id="inviteBox" readonly style="min-height:90px;font-family:ui-monospace,monospace;font-size:.75rem">' +
+        esc(link) + "</textarea>" +
+      '<button class="btn block mt" data-act="p.inviteCopy">📋 ' + esc(t("sync.copyLink")) + "</button>",
+      function (body) { var box = U.el("#inviteBox", body); if (box) { box.focus(); box.select(); } });
+  }
+  U.on("p.inviteCopy", function () {
+    var box = U.el("#inviteBox");
+    if (!box) return;
+    box.select();
+    box.setSelectionRange(0, box.value.length);
+    var done = false;
+    try { done = document.execCommand("copy"); } catch (e) {}
+    if (!done && global.navigator.clipboard) {
+      return global.navigator.clipboard.writeText(box.value)
+        .then(function () { U.toast(t("sync.linkCopied"), "good"); })
+        .catch(function () {});
+    }
+    if (done) U.toast(t("sync.linkCopied"), "good");
+  });
+
   U.on("p.trToggle", function (d, node) {
     S.get().settings.translate = node.checked;
     S.save();
@@ -4237,6 +4783,7 @@ nav.tabs .badge {
   U.on("p.catDelete", function (d) {
     var used = S.get().tasks.some(function (t2) { return t2.categoryId === d.id; });
     if (used) return U.toast(t("family.categoryInUse"), "bad");
+    S.forget(d.id);
     S.get().categories = S.get().categories.filter(function (c) { return c.id !== d.id; });
     S.save();
     global.App.refresh();
@@ -4775,11 +5322,20 @@ nav.tabs .badge {
       '<div class="brand-mark">🏆</div>' +
       '<div class="bar-title"><strong>' + esc(title) + "</strong><small>" + esc(sub || "") + "</small></div>" +
       '<div class="bar-actions">' +
+        (global.Sync.connected()
+          ? '<span id="syncDot" class="sync-dot" title="' + esc(t("sync.title")) + '">' + syncDot() + "</span>"
+          : "") +
         '<button class="icon-btn" data-act="app.lang" aria-label="' + esc(t("common.language")) + '">🌐</button>' +
         (screen === "parent" || screen === "child"
           ? who + '<button class="icon-btn" data-act="app.logout" aria-label="' + esc(t("common.logout")) + '">⏻</button>'
           : "") +
       "</div></div>";
+  }
+
+  function syncDot() {
+    var st = global.Sync.status();
+    if (!st.connected) return "";
+    return st.state === "syncing" ? "🔄" : st.state === "offline" ? "🟠" : st.state === "error" ? "🔴" : "🟢";
   }
 
   function tabBar(tabs) {
@@ -4830,6 +5386,45 @@ nav.tabs .badge {
     global.I18N.setLang((user && user.lang) || S.get().settings.lang || guessLang());
   }
 
+  /* Joining a family from an invite link. Peek first so the person can see
+     whose family they are about to join, since joining replaces this device. */
+  function joinDialog(prefill) {
+    U.modal(t("sync.join"),
+      '<p class="hint">' + esc(t("sync.joinHint")) + "</p>" +
+      '<textarea id="joinBox" style="min-height:80px;font-family:ui-monospace,monospace;font-size:.75rem">' +
+        esc(prefill || "") + "</textarea>" +
+      '<button class="btn block mt" data-act="app.joinGo">' + esc(t("sync.joinBtn")) + "</button>");
+  }
+  U.on("app.join", function () { joinDialog(""); });
+  U.on("app.joinGo", function () {
+    var box = U.el("#joinBox");
+    if (!box) return;
+    var text = box.value;
+    U.toast(t("sync.syncing"));
+    global.Sync.peek(text).then(function (res) {
+      var name = (res && res.doc && res.doc.settings && res.doc.settings.familyName) || t("app.name");
+      U.confirmDialog(t("sync.joinReplace", { name: name }), function () {
+        global.Sync.join(text).then(function () {
+          applyUserLang();
+          S.clearSession();
+          go({ screen: "login", tab: "dashboard", params: {} });
+          U.toast(t("sync.joined", { name: name }), "good");
+        }).catch(function () { U.toast(t("sync.joinBad"), "bad"); });
+      });
+    }).catch(function () { U.toast(t("sync.joinBad"), "bad"); });
+  });
+
+  /* An invite link opened in a browser carries the family in its hash. */
+  function invitationInUrl() {
+    var hash = global.location.hash || "";
+    if (hash.indexOf("#join=") !== 0) return null;
+    var parsed = global.Sync.parseInvite(hash);
+    if (!parsed) return null;
+    try { global.history.replaceState(null, "", global.location.pathname + global.location.search); }
+    catch (e) { global.location.hash = ""; }
+    return hash;
+  }
+
   function guessLang() {
     var nav = (global.navigator.language || "en").slice(0, 2).toLowerCase();
     return ["en", "nl", "he"].indexOf(nav) !== -1 ? nav : "en";
@@ -4843,6 +5438,15 @@ nav.tabs .badge {
     view.screen = resolveScreen();
     view.tab = view.screen === "child" ? "me" : "dashboard";
     refresh();
+
+    global.Sync.start();
+    global.Sync.onChange(function () {
+      var badge = U.el("#syncDot");
+      if (badge) badge.textContent = syncDot();
+    });
+
+    var invitation = invitationInUrl();
+    if (invitation) joinDialog(invitation);
   }
 
   global.App = {

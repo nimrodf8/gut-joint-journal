@@ -111,6 +111,7 @@ header.bar .wrap { display: flex; align-items: center; gap: 10px; padding: 10px 
 .bar-title strong { display: block; font-size: .98rem; line-height: 1.2; }
 .bar-title small { font-size: .74rem; }
 .bar-actions { display: flex; gap: 6px; align-items: center; }
+.sync-dot { font-size: .72rem; line-height: 1; }
 
 /* ---------- cards ---------- */
 .card {

@@ -134,7 +134,9 @@
       ledger: [],
       claims: [],
       movieNights: [],
-      redemptions: []
+      redemptions: [],
+      deleted: {},
+      savedAt: now()
     };
   }
 
@@ -148,16 +150,32 @@
     if (state) migrate(state);
     return state;
   }
+  var saveHooks = [];
+  function onSave(fn) { saveHooks.push(fn); }
+
   function save() {
+    state.savedAt = now();
     try { global.localStorage.setItem(KEY, JSON.stringify(state)); }
     catch (e) { /* quota or private mode — the UI stays usable for this session */ }
+    saveHooks.forEach(function (fn) { try { fn(state); } catch (e) {} });
     return state;
+  }
+
+  /* Deleting has to be remembered, not just done: another device still holds
+     the thing, and without a record of the deletion a merge would bring it
+     back. The id is enough — what it pointed at is already gone. */
+  function forget(id) {
+    if (!id) return;
+    if (!state.deleted) state.deleted = {};
+    state.deleted[id] = now();
   }
   function migrate(s) {
     if (!s.claims) s.claims = [];
     if (!s.movieNights) s.movieNights = [];
     if (!s.rewards) s.rewards = defaultRewards();
     if (!s.redemptions) s.redemptions = [];
+    if (!s.deleted) s.deleted = {};
+    if (!s.savedAt) s.savedAt = s.createdAt || now();
     s.claims.forEach(function (c) { if (!c.kind) c.kind = "task"; });
     /* Family outings used to be the only reward, driven by one goal number.
        They become entries in the rewards catalogue so they can be edited. */
@@ -244,6 +262,7 @@
   }
   function removeParent(id) {
     if (state.parents.length <= 1) return false;
+    forget(id);
     state.parents = state.parents.filter(function (p) { return p.id !== id; });
     save();
     return true;
@@ -278,6 +297,10 @@
     return c;
   }
   function removeChild(id) {
+    forget(id);
+    (child(id) || { notes: [] }).notes.concat((child(id) || {}).gifts || [], (child(id) || {}).outings || [])
+      .forEach(function (i) { forget(i.id); });
+    state.ledger.forEach(function (l) { if (l.childId === id) forget(l.id); });
     state.children = state.children.filter(function (c) { return c.id !== id; });
     state.ledger = state.ledger.filter(function (l) { return l.childId !== id; });
     state.claims = state.claims.filter(function (c) { return c.childId !== id; });
@@ -374,6 +397,7 @@
     return cat;
   }
   function deleteTask(id) {
+    forget(id);
     state.tasks = state.tasks.filter(function (t) { return t.id !== id; });
     state.claims = state.claims.filter(function (c) { return c.taskId !== id; });
     save();
@@ -414,6 +438,7 @@
     return data;
   }
   function deleteReward(id) {
+    forget(id);
     state.rewards = state.rewards.filter(function (r) { return r.id !== id; });
     state.claims = state.claims.filter(function (c) { return c.rewardId !== id; });
     save();
@@ -701,6 +726,7 @@
   function removeListItem(childId, field, itemId) {
     var c = child(childId);
     if (!c || !c[field]) return;
+    forget(itemId);
     c[field] = c[field].filter(function (i) { return i.id !== itemId; });
     save();
   }
@@ -731,6 +757,7 @@
   global.Store = {
     KEY: KEY, START_POINTS: START_POINTS,
     load: load, save: save, get: get, exists: exists, replace: replace, wipe: wipe,
+    onSave: onSave, forget: forget,
     createFamily: createFamily, emptyState: emptyState, defaultTasks: defaultTasks,
     addParent: addParent, findParent: findParent, removeParent: removeParent,
     setParentPassword: setParentPassword, parent: parent,

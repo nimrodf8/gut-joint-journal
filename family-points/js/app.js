@@ -77,11 +77,20 @@
       '<div class="brand-mark">🏆</div>' +
       '<div class="bar-title"><strong>' + esc(title) + "</strong><small>" + esc(sub || "") + "</small></div>" +
       '<div class="bar-actions">' +
+        (global.Sync.connected()
+          ? '<span id="syncDot" class="sync-dot" title="' + esc(t("sync.title")) + '">' + syncDot() + "</span>"
+          : "") +
         '<button class="icon-btn" data-act="app.lang" aria-label="' + esc(t("common.language")) + '">🌐</button>' +
         (screen === "parent" || screen === "child"
           ? who + '<button class="icon-btn" data-act="app.logout" aria-label="' + esc(t("common.logout")) + '">⏻</button>'
           : "") +
       "</div></div>";
+  }
+
+  function syncDot() {
+    var st = global.Sync.status();
+    if (!st.connected) return "";
+    return st.state === "syncing" ? "🔄" : st.state === "offline" ? "🟠" : st.state === "error" ? "🔴" : "🟢";
   }
 
   function tabBar(tabs) {
@@ -132,6 +141,45 @@
     global.I18N.setLang((user && user.lang) || S.get().settings.lang || guessLang());
   }
 
+  /* Joining a family from an invite link. Peek first so the person can see
+     whose family they are about to join, since joining replaces this device. */
+  function joinDialog(prefill) {
+    U.modal(t("sync.join"),
+      '<p class="hint">' + esc(t("sync.joinHint")) + "</p>" +
+      '<textarea id="joinBox" style="min-height:80px;font-family:ui-monospace,monospace;font-size:.75rem">' +
+        esc(prefill || "") + "</textarea>" +
+      '<button class="btn block mt" data-act="app.joinGo">' + esc(t("sync.joinBtn")) + "</button>");
+  }
+  U.on("app.join", function () { joinDialog(""); });
+  U.on("app.joinGo", function () {
+    var box = U.el("#joinBox");
+    if (!box) return;
+    var text = box.value;
+    U.toast(t("sync.syncing"));
+    global.Sync.peek(text).then(function (res) {
+      var name = (res && res.doc && res.doc.settings && res.doc.settings.familyName) || t("app.name");
+      U.confirmDialog(t("sync.joinReplace", { name: name }), function () {
+        global.Sync.join(text).then(function () {
+          applyUserLang();
+          S.clearSession();
+          go({ screen: "login", tab: "dashboard", params: {} });
+          U.toast(t("sync.joined", { name: name }), "good");
+        }).catch(function () { U.toast(t("sync.joinBad"), "bad"); });
+      });
+    }).catch(function () { U.toast(t("sync.joinBad"), "bad"); });
+  });
+
+  /* An invite link opened in a browser carries the family in its hash. */
+  function invitationInUrl() {
+    var hash = global.location.hash || "";
+    if (hash.indexOf("#join=") !== 0) return null;
+    var parsed = global.Sync.parseInvite(hash);
+    if (!parsed) return null;
+    try { global.history.replaceState(null, "", global.location.pathname + global.location.search); }
+    catch (e) { global.location.hash = ""; }
+    return hash;
+  }
+
   function guessLang() {
     var nav = (global.navigator.language || "en").slice(0, 2).toLowerCase();
     return ["en", "nl", "he"].indexOf(nav) !== -1 ? nav : "en";
@@ -145,6 +193,15 @@
     view.screen = resolveScreen();
     view.tab = view.screen === "child" ? "me" : "dashboard";
     refresh();
+
+    global.Sync.start();
+    global.Sync.onChange(function () {
+      var badge = U.el("#syncDot");
+      if (badge) badge.textContent = syncDot();
+    });
+
+    var invitation = invitationInUrl();
+    if (invitation) joinDialog(invitation);
   }
 
   global.App = {

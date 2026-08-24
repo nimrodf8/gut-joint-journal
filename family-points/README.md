@@ -79,6 +79,37 @@ starting balance is a ledger entry, and a balance is replayed from the ledger.
 A mistaken award can be traced in the child's history instead of quietly
 drifting.
 
+## One family on every device
+
+Syncing is off when you start: the family lives in the browser it was entered
+in, and nothing leaves the device. Turn it on in *Family → One family on every
+device* and the family moves onto a small server, with an **invite link** to
+send to everyone else. Whoever opens that link joins the same family on their
+own phone, tablet or computer, and from then on points, tasks, rewards and
+notes reach every device within seconds.
+
+How it holds together when two people are using it at once:
+
+- The server keeps one document per family and a revision number. A device may
+  only write onto the revision it started from; if it is behind, the server
+  refuses the write and hands back what it has, so nothing is ever overwritten
+  blind.
+- The device then merges the two and writes again. Points, claims and rewards
+  are append-only, so entries from both sides are kept — an award made on the
+  phone and a deduction made on the tablet both survive. Things that are edited
+  in place take the more recently saved side, and deletions are remembered, so a
+  deleted task cannot crawl back from a device that still had it.
+- Edits made with no signal are kept and sent when the device is back online.
+- *Stop syncing* leaves the family on that device and cuts it loose; the others
+  carry on.
+
+Anyone holding the invite link is in the family, so treat it like a key to the
+house. Reaching a family requires both its id — an unguessable one — and its
+secret; the public API key on its own opens nothing. To run this on your own
+server instead, set `window.FP_SYNC_SERVER = {url, key}` before the app loads,
+or edit the two lines at the top of `js/sync.js`; the schema it expects is in
+`server/schema.sql`.
+
 ## Languages and simultaneous translation
 
 Language is a personal setting, not a family-wide one: a parent can read the app
@@ -181,13 +212,14 @@ the text being translated stays on the device.
   to start a download.
 - Clearing the browser's site data erases the family. Export first.
 
-**Each device keeps its own copy.** Opening the link on a phone and on a laptop
-gives you two separate families, because the data never leaves the browser it
-was entered in. To put one family on several devices, set it up once, export the
-backup, and restore it on the other devices — *Restore from a backup* sits on
-the very first screen and on the sign-in screen. Points earned afterwards do not
-flow between devices; that needs a shared backend, which this app deliberately
-does not have.
+**Until you turn syncing on, each device keeps its own copy.** Opening the link
+on a phone and on a laptop gives you two separate families. Turn on syncing (see
+above) to make them one, or move a family across by hand with *Restore from a
+backup*, which sits on the very first screen and on the sign-in screen.
+
+With syncing on, the family is also stored on the server as one document. That
+is the trade: the family works across devices, and in exchange the notes and
+points live somewhere other than your own device.
 
 ## Layout
 
@@ -198,6 +230,7 @@ family-points/
 └── js/
     ├── i18n.js         261 interface strings × en / nl / he
     ├── translate.js    on-device translation of what the family writes
+    ├── sync.js         optional sync across devices, and the merge rules
     ├── avatars.js      emoji characters on coloured discs (no image files)
     ├── sha256.js       hashing for passwords and PINs
     ├── store.js        data model, ledger, balances, weeks, birthdays
@@ -206,6 +239,8 @@ family-points/
     ├── parent.js       the admin screens
     ├── child.js        the children's screens
     └── app.js          routing, header, tabs, boot
+server/
+└── schema.sql          the table and the three functions the sync talks to
 ```
 
 Scripts are plain classic `<script>` tags in dependency order, so the app also
@@ -234,6 +269,10 @@ runs straight from `file://` without a server.
   כברירת מחדל). "בוחר/ת את הסרט" זו רק ברירת המחדל — אפשר לכתוב כל פרס אחר.
 - **שפה אישית לכל משתמש**: כל הורה וכל ילד בוחרים את השפה שלהם, והכניסה לחשבון
   מחליפה את כל הממשק (כולל פריסת RTL לעברית) לשפה של אותו אדם.
+- **סנכרון בין מכשירים**: בהגדרות אפשר להפעיל סנכרון, לקבל **קישור הזמנה** ולשלוח
+  אותו למשפחה. כל מי שפותח אותו מצטרף לאותה משפחה מהמכשיר שלו, ומאותו רגע נקודות,
+  משימות, פרסים והערות מגיעים לכל המכשירים תוך שניות. עריכות שנעשו בלי רשת נשמרות
+  ונשלחות כשחוזרים לאוויר, ושינויים משני מכשירים במקביל שניהם נשמרים.
 - **תרגום סימולטני**: הערה שילד כותב בעברית מוצגת בהולנדית להורה שקורא הולנדית,
   ומשימה שהורה כתב בהולנדית מוצגת בעברית לילד שקורא עברית. התרגום מתבצע בתוך
   הדפדפן (Translator API של כרום) — הטקסט לא יוצא מהמכשיר. לצד כל טקסט מתורגם
