@@ -1,6 +1,9 @@
 /* Character list for profile pictures.
    Every avatar is an emoji on a coloured disc drawn by CSS — nothing is
-   downloaded and no artwork is copied, so the family can pick freely. */
+   downloaded and no artwork is copied, so the family can pick freely.
+
+   The colour comes from the position in the list, so two children who pick
+   neighbouring characters still get discs that tell them apart at a glance. */
 (function (global) {
   "use strict";
 
@@ -13,16 +16,35 @@
     });
   }
 
+  /* Kept in a stable order: ids are position-based, so new characters go at
+     the end and nobody's avatar changes underneath them. */
   var KIDS = make([
+    // the classics
     "🦊", "🐼", "🦁", "🐯", "🐨", "🐸", "🦄", "🐙", "🐳", "🦖",
     "🐝", "🦉", "🐢", "🦋", "🐧", "🦔", "🐰", "🐶", "🐱", "🐵",
     "🤖", "👾", "🚀", "🌟", "🌈", "🍀", "🐲", "🦕", "🐬", "🦩",
-    "🦜", "🐞", "🦭", "🐺", "🦥", "🐷"
+    "🦜", "🐞", "🦭", "🐺", "🦥", "🐷",
+    // more animals
+    "🐮", "🐭", "🐹", "🐻", "🦝", "🦡", "🦫", "🦦", "🦘", "🦙",
+    "🦌", "🐴", "🦓", "🦒", "🐘", "🦏", "🦛", "🐑", "🐐", "🐓",
+    "🐣", "🦆", "🦢", "🦚", "🕊️", "🦅", "🦇", "🐗", "🐿️", "🦈",
+    "🐡", "🦑", "🦐", "🦀", "🐊", "🐍", "🦎", "🐌", "🐜", "🦗",
+    // creatures and heroes
+    "👽", "🦸", "🦹", "🧙", "🧚", "🧜", "🧝", "🧞", "🥷", "🤠",
+    "👻", "🎃", "⛄", "🛸",
+    // things to be
+    "⚽", "🏀", "🎾", "🎸", "🥁", "🎨", "🎭", "🎬", "📚", "🎯",
+    "🚲", "🛹", "🎢", "🏆", "🌵", "🍄", "🌻", "🌊", "⚡", "🔥",
+    "💎", "🌙", "☀️", "🍿", "🧁", "🍉", "🍭", "🐾"
   ], "k");
 
   var PARENTS = make([
     "👩", "👨", "🧑", "👩‍🦰", "👨‍🦰", "👩‍🦱", "👨‍🦱", "👵", "👴", "🧔",
-    "👩‍🦳", "👨‍🦳"
+    "👩‍🦳", "👨‍🦳",
+    // added later, so they sit after the originals
+    "👱", "👳", "👲", "🧕", "👮", "💂", "👷", "🤴", "👸", "🥷",
+    "🧙", "🦸", "🦹", "🧑‍🚀", "🧑‍🍳", "🧑‍🌾", "🧑‍🏫", "🧑‍🔧", "🧑‍🎨", "🧑‍⚕️",
+    "🎅", "🤶", "🐻", "🦁", "🦊", "🐨"
   ], "p");
 
   var ICONS = ["🧽", "🧺", "📚", "🎲", "🇳🇱", "⭐", "🛏️", "🍽️", "🦷", "🐕",

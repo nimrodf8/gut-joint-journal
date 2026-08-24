@@ -45,6 +45,10 @@ truth, so rebuild after changing anything there. The first visit walks a parent 
 Nothing in the app is a fixed rule — the starter tasks, categories and rewards
 are examples to be renamed, repriced, reassigned or deleted:
 
+- **People** — every parent and every child can be edited after the fact: name
+  (per language), character, their own language, birthday and PIN for a child,
+  username and password for a parent. There are 118 characters to pick from for
+  a child and 38 for a parent.
 - **Tasks** — add, edit, pause or delete, and change what they are worth.
 - **Categories** — add, rename and change the icon.
 - **Rewards** — a full catalogue, see below.
@@ -286,7 +290,10 @@ runs straight from `file://` without a server.
 - כל ילד מתחיל עם **500 נקודות**. לכל משימה מוגדר ניקוד כשמבוצעת וניקוד כשלא
   מבוצעת — כך שאפשר גם משימה ניטרלית שנותנת 0 בביצוע ומקזזת כשלא בוצעה.
 - **הכול ניתן לעריכה**: המשימות, הנושאים והפרסים שמגיעים עם האפליקציה הם רק
-  דוגמאות — אפשר לשנות שם, מחיר, אייקון ושיוך, להוסיף חדשים או למחוק.
+  דוגמאות — אפשר לשנות שם, מחיר, אייקון ושיוך, להוסיף חדשים או למחוק. גם פרטי
+  ההורים והילדים ניתנים לעריכה בכל רגע: שם (לכל שפה), דמות, שפה, תאריך לידה
+  וקוד סודי לילד, שם משתמש וסיסמה להורה. יש 118 דמויות לבחירה לילדים ו-38
+  להורים.
 - **קטלוג פרסים**: פרסים אישיים שנקנים מהנקודות של הילד (הילד מבקש, הורה מאשר,
   והנקודות יורדות), ופרסים משפחתיים שנקנים מהקופה הקבוצתית — וכשפרס משפחתי הופך
   זמין, הילד עם הכי הרבה נקודות בוחר, עם העדפות הבילוי שלו כהצעות בלחיצה.
