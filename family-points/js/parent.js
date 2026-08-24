@@ -666,6 +666,7 @@
           '<button class="icon-btn" data-act="p.catDelete" data-id="' + c.id + '">🗑️</button></li>';
       }).join("") + "</ul></div>";
 
+    html += syncCard();
     html += translationCard();
 
     html += '<div class="section-title">' + esc(t("family.data")) + "</div>" +
@@ -685,6 +686,35 @@
         '" data-act="' + action + '" data-lang="' + l.code + '"' + (extra || "") + ">" +
         l.flag + " " + esc(l.label) + "</button>";
     }).join("") + "</div>";
+  }
+
+  function syncCard() {
+    var st = global.Sync.status();
+    var line = !st.connected ? t("sync.off") : t("sync." + (st.state === "off" ? "idle" : st.state));
+    var dot = !st.connected ? "⚪"
+            : st.state === "syncing" ? "🔄"
+            : st.state === "offline" ? "🟠"
+            : st.state === "error" ? "🔴" : "🟢";
+
+    var body = '<small>' + esc(t("sync.hint")) + "</small>" +
+      '<div class="kv"><span class="k">' + esc(t("common.status")) + "</span><span>" +
+        dot + " " + esc(line) + "</span></div>";
+
+    if (st.connected) {
+      body += '<div class="kv"><span class="k">' + esc(t("sync.lastSync", { when: "" }).replace("{when}", "")) +
+        "</span><span>" + esc(st.lastSyncAt ? U.fmtDateTime(st.lastSyncAt) : t("sync.never")) + "</span></div>" +
+        '<div class="row gap mt">' +
+          '<button class="btn grow" data-act="p.syncInvite">🔗 ' + esc(t("sync.invite")) + "</button>" +
+          '<button class="btn ghost" data-act="p.syncNow">' + esc(t("sync.now")) + "</button>" +
+        "</div>" +
+        '<button class="btn ghost block mt" data-act="p.syncOff">' + esc(t("sync.disconnect")) + "</button>";
+    } else {
+      body += '<button class="btn block mt" data-act="p.syncOn">☁️ ' + esc(t("sync.connect")) + "</button>" +
+        '<button class="btn ghost block mt" data-act="app.join">' + esc(t("sync.join")) + "</button>";
+    }
+
+    return '<div class="section-title">' + esc(t("sync.title")) + "</div>" +
+      '<div class="card">' + body + '<div class="hint">' + esc(t("sync.privacy")) + "</div></div>";
   }
 
   function translationCard() {
@@ -1020,6 +1050,49 @@
     U.els(".modal-body [data-act='p.childLang']").forEach(function (b) { b.classList.remove("on"); });
     node.classList.add("on");
   });
+  U.on("p.syncOn", function () {
+    U.toast(t("sync.working"));
+    global.Sync.connect().then(function () {
+      global.App.refresh();
+      inviteDialog();
+    }).catch(function () { U.toast(t("sync.offline"), "bad"); });
+  });
+  U.on("p.syncNow", function () {
+    U.toast(t("sync.syncing"));
+    global.Sync.syncNow().then(function () { global.App.refresh(); });
+  });
+  U.on("p.syncOff", function () {
+    U.confirmDialog(t("sync.disconnectWarn"), function () {
+      global.Sync.disconnect();
+      global.App.refresh();
+    });
+  });
+  U.on("p.syncInvite", inviteDialog);
+
+  function inviteDialog() {
+    var link = global.Sync.invite();
+    U.modal(t("sync.invite"),
+      '<p class="hint">' + esc(t("sync.inviteHint")) + "</p>" +
+      '<textarea id="inviteBox" readonly style="min-height:90px;font-family:ui-monospace,monospace;font-size:.75rem">' +
+        esc(link) + "</textarea>" +
+      '<button class="btn block mt" data-act="p.inviteCopy">📋 ' + esc(t("sync.copyLink")) + "</button>",
+      function (body) { var box = U.el("#inviteBox", body); if (box) { box.focus(); box.select(); } });
+  }
+  U.on("p.inviteCopy", function () {
+    var box = U.el("#inviteBox");
+    if (!box) return;
+    box.select();
+    box.setSelectionRange(0, box.value.length);
+    var done = false;
+    try { done = document.execCommand("copy"); } catch (e) {}
+    if (!done && global.navigator.clipboard) {
+      return global.navigator.clipboard.writeText(box.value)
+        .then(function () { U.toast(t("sync.linkCopied"), "good"); })
+        .catch(function () {});
+    }
+    if (done) U.toast(t("sync.linkCopied"), "good");
+  });
+
   U.on("p.trToggle", function (d, node) {
     S.get().settings.translate = node.checked;
     S.save();
@@ -1137,6 +1210,7 @@
   U.on("p.catDelete", function (d) {
     var used = S.get().tasks.some(function (t2) { return t2.categoryId === d.id; });
     if (used) return U.toast(t("family.categoryInUse"), "bad");
+    S.forget(d.id);
     S.get().categories = S.get().categories.filter(function (c) { return c.id !== d.id; });
     S.save();
     global.App.refresh();

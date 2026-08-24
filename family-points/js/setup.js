@@ -59,7 +59,8 @@
       '<button class="btn block mt" data-act="setup.next">' + esc(t("common.next")) + " →</button>" +
       '<hr style="border:none;border-top:1px solid var(--line);margin:18px 0">' +
       '<p class="hint" style="margin-top:0">' + esc(t("setup.haveFamily")) + "</p>" +
-      '<button class="btn ghost block" data-act="app.restore">⬆️ ' + esc(t("setup.restore")) + "</button>";
+      '<button class="btn ghost block" data-act="app.join">🔗 ' + esc(t("setup.joinFamily")) + "</button>" +
+      '<button class="btn ghost block mt" data-act="app.restore">⬆️ ' + esc(t("setup.restore")) + "</button>";
   }
 
   function stepParent() {
@@ -241,6 +242,7 @@
         (loginTab === "parent" ? parentLoginForm() : childLoginGrid(s)) +
       "</div>" +
       '<div class="center">' +
+        '<button class="btn ghost small" data-act="app.join">🔗 ' + esc(t("setup.joinFamily")) + "</button> " +
         '<button class="btn ghost small" data-act="app.restore">⬆️ ' + esc(t("setup.restore")) + "</button></div>" +
       '<div class="center"><div class="chips" style="justify-content:center">' +
         global.I18N.langs.map(function (l) {
